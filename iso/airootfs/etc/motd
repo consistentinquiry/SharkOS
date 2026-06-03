@@ -1,8 +1,12 @@
 
   Welcome to the SharkOS live installer 🦈
 
-  The installer starts automatically. If you need a plain shell instead,
-  switch to another console with Ctrl-Alt-F2, or re-run it any time with:
+  The installer starts automatically and lays down a base Arch system.
+  After you reboot, the full SharkOS desktop installs itself on first
+  boot — no further steps needed.
+
+  If you need a plain shell instead, switch to another console with
+  Ctrl-Alt-F2, or re-run the installer any time with:
 
       sharkos-install
 

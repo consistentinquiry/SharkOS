@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # SharkOS installer — runs inside the live ISO.
-# Stage 1 (here): install a base Arch system with archinstall (SharkOS defaults pre-filled).
-# Stage 2 (after reboot): log in and run the SharkOS setup to get the desktop.
+# Stage 1 (here): install a base Arch system with archinstall (SharkOS defaults pre-filled),
+#   and enable sharkos-firstboot.service to finish setup automatically.
+# Stage 2 (first boot): sharkos-firstboot runs install.sh to set up the desktop, then reboots.
 set -euo pipefail
 
 CONFIG="/root/sharkos/archinstall/sharkos.json"
-SETUP_URL="https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/install.sh"
 
 cat <<'BANNER'
    ____  _                _     ____  ____
@@ -29,6 +29,9 @@ fi
 echo "  Disk, hostname, user and passwords are chosen interactively."
 echo "  SharkOS defaults (kernel, PipeWire, NetworkManager, base packages) are pre-filled."
 echo
+echo "  IMPORTANT: mark your user account as a SUPERUSER in the menu — the SharkOS"
+echo "  desktop install on first boot needs sudo access."
+echo
 read -rp "  Press Enter to launch archinstall (Ctrl-C to abort)... " _
 
 # Load SharkOS defaults; fall back to plain archinstall if the schema mismatches this version.
@@ -39,14 +42,13 @@ if ! archinstall --config "$CONFIG"; then
   exit 1
 fi
 
-cat <<NEXT
+cat <<'NEXT'
 
   ════════════════════════════════════════════════════════════
-   Base system installed. Stage 2 — after you reboot:
+   Base system installed. The rest is automatic:
      1. Remove the install media and reboot.
-     2. Log in as the user you just created.
-     3. Run the SharkOS setup:
-          curl -fsSL $SETUP_URL | bash
-     4. Reboot into SharkOS.
+     2. On first boot, the SharkOS desktop installs itself
+        (packages, theming, login manager) — just leave it running.
+     3. It reboots into SharkOS when done. Log in and enjoy. 🦈
   ════════════════════════════════════════════════════════════
 NEXT

@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# ┌──────────────────────────────────────────────────────────────────┐
+# │  SharkOS first-boot desktop install                              │
+# │  Runs once (as root, via sharkos-firstboot.service) on the newly │
+# │  installed system, then auto-reboots into SharkOS.               │
+# │                                                                    │
+# │  install.sh refuses root and builds AUR packages, so we drop to   │
+# │  the primary user to run it. That user has no way to type a sudo  │
+# │  password unattended, so we open a temporary passwordless-sudo    │
+# │  window bracketed entirely around the run and tear it down after. │
+# └──────────────────────────────────────────────────────────────────┘
+set -uo pipefail
+
+DONE_MARKER="/var/lib/sharkos/.firstboot-done"
+SUDO_DROPIN="/etc/sudoers.d/99-sharkos-firstboot"
+SETUP_URL="https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/install.sh"
+
+mkdir -p "$(dirname "$DONE_MARKER")"
+[ -e "$DONE_MARKER" ] && exit 0
+
+# Primary user is archinstall's first account (UID 1000). Using getent avoids a
+# dependency on awk/gawk, which is not guaranteed in a minimal base install.
+USERNAME="$(getent passwd 1000 | cut -d: -f1)"
+if [ -z "${USERNAME:-}" ]; then
+  echo "sharkos-firstboot: no user at UID 1000; aborting." >&2
+  exit 1
+fi
+
+echo
+echo "  ┌─ SharkOS first-boot setup ──────────────────────────────────┐"
+echo "  │  Installing the SharkOS desktop for user '$USERNAME'."
+echo "  │  This downloads packages and may take a while. Leave it be.  │"
+echo "  └──────────────────────────────────────────────────────────────┘"
+echo
+
+# Belt-and-suspenders on top of the unit's network-online ordering.
+echo "  Waiting for network..."
+connected=0
+for _ in $(seq 1 30); do
+  if ping -c1 -W2 github.com >/dev/null 2>&1; then connected=1; break; fi
+  sleep 2
+done
+if [ "$connected" -ne 1 ]; then
+  echo "  !! No network after ~60s. Connect (e.g. nmtui) and reboot to retry." >&2
+  exit 1
+fi
+
+# Always remove the passwordless-sudo grant on exit, however we leave.
+cleanup() { rm -f "$SUDO_DROPIN"; }
+trap cleanup EXIT
+
+# Open the temporary passwordless-sudo window for the install run only.
+printf '%s ALL=(ALL) NOPASSWD: ALL\n' "$USERNAME" > "$SUDO_DROPIN"
+chmod 440 "$SUDO_DROPIN"
+
+# Run the SharkOS desktop installer as the user (login shell sets HOME/USER).
+if runuser -l "$USERNAME" -c "curl -fsSL '$SETUP_URL' | bash"; then
+  touch "$DONE_MARKER"
+  cleanup; trap - EXIT
+  systemctl disable sharkos-firstboot.service >/dev/null 2>&1 || true
+  echo
+  echo "  SharkOS desktop installed. Rebooting in 10s (Ctrl-C to cancel)..."
+  sleep 10 || true
+  systemctl reboot
+else
+  echo
+  echo "  !! SharkOS desktop install did not complete; will retry on next boot." >&2
+  echo "     (Network or AUR build failures are the usual cause.)" >&2
+  exit 1
+fi

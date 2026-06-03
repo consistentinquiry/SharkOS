@@ -5,11 +5,14 @@
   "audio_config": { "audio": "pipewire" },
   "network_config": { "type": "nm" },
   "profile_config": { "profile": { "main": "Minimal" } },
-  "packages": ["git", "base-devel", "sudo", "vim", "networkmanager"],
+  "packages": ["git", "base-devel", "sudo", "vim", "networkmanager", "curl"],
   "timezone": "UTC",
   "locale_config": { "kbd_layout": "us", "sys_enc": "UTF-8", "sys_lang": "en_US" },
   "custom_commands": [
     "systemctl enable NetworkManager.service",
-    "printf '\\nSharkOS base system. Finish setup with:\\n  curl -fsSL https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/install.sh | bash\\n\\n' > /etc/motd"
+    "curl -fsSL https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/iso/target/usr/local/bin/sharkos-firstboot -o /usr/local/bin/sharkos-firstboot && chmod 755 /usr/local/bin/sharkos-firstboot",
+    "curl -fsSL https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/iso/target/etc/systemd/system/sharkos-firstboot.service -o /etc/systemd/system/sharkos-firstboot.service",
+    "systemctl enable sharkos-firstboot.service",
+    "printf '\\nSharkOS base system. The SharkOS desktop installs automatically on first\\nboot, then reboots into SharkOS. If it does not, finish setup manually with:\\n  curl -fsSL https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/install.sh | bash\\n\\n' > /etc/motd"
   ]
 }

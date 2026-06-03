@@ -1,0 +1,17 @@
+[Unit]
+Description=SharkOS first-boot desktop install
+After=network-online.target NetworkManager.service systemd-user-sessions.service
+Wants=network-online.target
+ConditionPathExists=!/var/lib/sharkos/.firstboot-done
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/sharkos-firstboot
+# Show install progress on the boot console, not just the journal.
+StandardOutput=journal+console
+StandardInput=null
+# Package downloads and AUR builds far exceed the 90s default; never time out.
+TimeoutStartSec=infinity
+
+[Install]
+WantedBy=multi-user.target

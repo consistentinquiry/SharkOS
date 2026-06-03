@@ -18,7 +18,9 @@ A minimal, opinionated Arch Linux desktop built on Hyprland.
 ## Install
 
 **From the SharkOS ISO** (recommended): boot the ISO and run `sharkos-install`. It
-installs a base Arch system, then prints the one-liner below to finish setup after reboot.
+installs a base Arch system (mark your user as a **superuser** when prompted). After you
+reboot, the full SharkOS desktop installs itself automatically on first boot, then reboots
+into SharkOS — no manual second step.
 
 **On an existing Arch install:**
 
@@ -38,9 +40,11 @@ sudo pacman -S --needed archiso qemu-base edk2-ovmf   # build + test deps
 ./scripts/test-iso.sh           # boot the newest ISO in QEMU (UEFI) to test
 ```
 
-Install flow is two-stage (like the bootstrap above): the ISO's `sharkos-install`
-lays down base Arch via `archinstall` (disk/user interactive, SharkOS defaults from
-`iso/archinstall/sharkos.json`); after reboot the user runs `install.sh` for the desktop.
+Install flow is two-stage, both automatic: the ISO's `sharkos-install` lays down base
+Arch via `archinstall` (disk/user interactive, SharkOS defaults from
+`iso/archinstall/sharkos.json`). That enables a one-shot `sharkos-firstboot.service`
+(installed from `iso/target/`) which, on the new system's first boot, runs `install.sh`
+as the user to install the desktop and then reboots into SharkOS.
 
 ## How it works
 
@@ -93,7 +97,8 @@ wallpaper/    Desktop wallpapers at multiple resolutions
 scripts/      Helper scripts (package audit, ISO test)
 greetd/       Login manager config
 iso/          ISO overlay (live installer, archinstall config) layered on releng
-install.sh    Desktop setup (stage 2)
+iso/target/   Files installed into the target system (first-boot desktop install)
+install.sh    Desktop setup (run automatically on first boot, or manually)
 build-iso.sh  Builds the live/installer ISO
 ```
 
