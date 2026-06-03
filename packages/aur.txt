@@ -10,6 +10,7 @@ swayosd-git
 # Search provider
 elephant
 elephant-desktopapplications
+elephant-menus
 
 # Boot splash
 plymouth

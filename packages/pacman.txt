@@ -4,6 +4,7 @@
 # Window manager & Wayland
 hyprland
 hyprlock
+hypridle
 hyprpaper
 hyprpolkitagent
 xdg-desktop-portal-hyprland
@@ -47,6 +48,7 @@ ttf-dejavu
 # System
 networkmanager
 network-manager-applet
+impala
 blueman
 power-profiles-daemon
 
