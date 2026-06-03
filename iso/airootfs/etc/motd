@@ -1,12 +1,10 @@
 
   Welcome to the SharkOS live installer 🦈
 
-  To install SharkOS, run:
+  The installer starts automatically. If you need a plain shell instead,
+  switch to another console with Ctrl-Alt-F2, or re-run it any time with:
 
       sharkos-install
-
-  This installs a base Arch system. After rebooting, log in and run the
-  SharkOS setup (it prints the exact command when stage 1 finishes).
 
   Networking: wired is automatic; for Wi-Fi use `iwctl`.
 

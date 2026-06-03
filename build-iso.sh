@@ -38,6 +38,18 @@ sed -i \
 # Ensure the installer is executable inside the squashfs (archiso reads file_permissions)
 echo 'file_permissions+=(["/usr/local/bin/sharkos-install"]="0:0:755")' >> "$PROFILE/profiledef.sh"
 
+echo "==> Rebranding boot menus"
+# Rewrite the boot-loader menu labels across whichever bootloaders releng ships
+# (systemd-boot: efiboot/, GRUB: grub/, BIOS: syslinux/). String-based so it
+# survives archiso layout changes between versions.
+for d in efiboot grub syslinux; do
+  [[ -d "$PROFILE/$d" ]] && find "$PROFILE/$d" -type f -exec sed -i \
+    -e 's/Arch Linux install medium/SharkOS Installer/g' \
+    -e 's/^\(\s*MENU TITLE\) .*/\1 SharkOS/' \
+    -e 's/Arch Linux (\(.*\))/SharkOS (\1)/g' \
+    {} +
+done
+
 echo "==> Building ISO (requires root)"
 sudo mkarchiso -v -w "$WORK/work" -o "$OUT" "$PROFILE"
 
