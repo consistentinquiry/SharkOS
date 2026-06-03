@@ -1,0 +1,15 @@
+# sharkOS - AUR Packages
+# Install with: yay -S --needed --noconfirm - < aur.txt
+
+# Application launcher
+walker
+
+# Volume/brightness OSD
+swayosd-git
+
+# Search provider
+elephant
+elephant-desktopapplications
+
+# Boot splash
+plymouth

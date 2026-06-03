@@ -1,0 +1,16 @@
+# Editor / OS cruft
+*.swp
+*.swo
+*~
+.DS_Store
+*.log
+
+# Install-time backups
+*.bak
+
+# Generated Omarchy-derived themes — rebuilt by config/themes/generate-omarchy-themes.sh
+# (palettes + ~27MB of wallpapers, all reproducible from the upstream omarchy repo)
+config/themes/omarchy-*/
+
+# Runtime state — which theme is currently active
+config/themes/.current

@@ -1,0 +1,12 @@
+[general]
+debounce = 50
+
+[plugins.applications]
+enable = true
+binary = "elephant-desktopapplications"
+weight = 5
+
+[plugins.applications.config]
+only_visible = true
+show_generic = false
+show_sub = false

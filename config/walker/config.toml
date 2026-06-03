@@ -1,0 +1,7 @@
+theme = "noir"
+activation_mode = "disabled"
+
+[providers]
+default = ["desktopapplications"]
+empty = ["desktopapplications"]
+

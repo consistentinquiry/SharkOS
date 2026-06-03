@@ -1,0 +1,29 @@
+background = 000000
+foreground = ffffff
+font-family = JetBrainsMono Nerd Font
+font-size = 13
+
+window-padding-x = 12
+window-padding-y = 8
+
+# Terminal palette
+palette = 0=0a0a0a
+palette = 1=c4676c
+palette = 2=7db88f
+palette = 3=d4a76a
+palette = 4=6e95bd
+palette = 5=b07eb5
+palette = 6=7bb8c4
+palette = 7=c0c0c0
+palette = 8=404040
+palette = 9=e07a7f
+palette = 10=8fd4a2
+palette = 11=e8c07a
+palette = 12=82aed6
+palette = 13=c994ce
+palette = 14=8fd0dc
+palette = 15=e8e8e8
+
+cursor-color = ffffff
+selection-background = 333333
+selection-foreground = ffffff

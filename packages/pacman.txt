@@ -1,0 +1,64 @@
+# sharkOS - Official Repository Packages
+# Install with: pacman -S --needed - < pacman.txt
+
+# Window manager & Wayland
+hyprland
+hyprlock
+hyprpaper
+hyprpolkitagent
+xdg-desktop-portal-hyprland
+wayland
+wayland-protocols
+
+# Status bar & notifications
+waybar
+mako
+
+# Terminal
+ghostty
+
+# Audio (PipeWire stack)
+pipewire-alsa
+pipewire-pulse
+pavucontrol
+
+# Brightness
+brightnessctl
+
+# Screenshots & clipboard
+grim
+slurp
+swappy
+wl-clipboard
+cliphist
+
+# File manager & automount
+thunar
+udiskie
+udisks2
+
+# Fonts
+ttf-jetbrains-mono
+ttf-jetbrains-mono-nerd
+noto-fonts
+noto-fonts-emoji
+ttf-dejavu
+
+# System
+networkmanager
+network-manager-applet
+blueman
+power-profiles-daemon
+
+# Greeter
+greetd
+greetd-tuigreet
+
+# Media
+ffmpeg
+vlc
+
+# Utilities
+imagemagick
+unzip
+wget

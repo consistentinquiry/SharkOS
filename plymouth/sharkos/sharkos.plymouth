@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=sharkos
+Description=sharkOS boot splash - minimal dark theme with LUKS support
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/sharkos
+ScriptFile=/usr/share/plymouth/themes/sharkos/sharkos.script

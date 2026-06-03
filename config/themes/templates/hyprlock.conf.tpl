@@ -1,0 +1,66 @@
+general {
+    disable_loading_bar = true
+    hide_cursor = true
+    grace = 0
+}
+
+background {
+    monitor =
+    path = screenshot
+    blur_passes = 4
+    blur_size = 8
+    noise = 0.0117
+    contrast = 1.2
+    brightness = 0.9
+    vibrancy = 0.2
+    vibrancy_darkness = 0.2
+}
+
+input-field {
+    monitor =
+    size = 340, 56
+    outline_thickness = 2
+    rounding = 14
+
+    outer_color = {{LOCK_OUTER}}
+    inner_color = {{LOCK_INNER}}
+    font_color = {{LOCK_FONT}}
+    check_color = {{LOCK_OUTER}}
+    fail_color = {{LOCK_FAIL}}
+    capslock_color = {{LOCK_CAPS}}
+
+    dots_size = 0.28
+    dots_spacing = 0.22
+    dots_center = true
+    fade_on_empty = false
+    placeholder_text = <span foreground="##{{LOCK_PLACEHOLDER_FG}}">Enter Password...</span>
+    hide_input = false
+
+    position = 0, -40
+    halign = center
+    valign = center
+}
+
+label {
+    monitor =
+    text = cmd[update:1000] echo "$(date +'%H:%M')"
+    color = {{LOCK_FONT}}
+    font_size = 52
+    font_family = JetBrainsMono Nerd Font
+
+    position = 0, 80
+    halign = center
+    valign = center
+}
+
+label {
+    monitor =
+    text = cmd[update:1000] echo "$(date +'%A, %d %B')"
+    color = {{LOCK_FONT}}
+    font_size = 18
+    font_family = JetBrainsMono Nerd Font
+
+    position = 0, 30
+    halign = center
+    valign = center
+}
