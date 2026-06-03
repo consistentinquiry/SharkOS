@@ -1,0 +1,15 @@
+{
+  "__comment__": "SharkOS base-install defaults for archinstall. Disk layout, hostname, user and passwords are chosen interactively in the TUI. archinstall's JSON schema changes between releases — if a key is rejected, drop/adjust it or run plain `archinstall`.",
+  "kernels": ["linux"],
+  "bootloader": "Systemd-boot",
+  "audio_config": { "audio": "pipewire" },
+  "network_config": { "type": "nm" },
+  "profile_config": { "profile": { "main": "Minimal" } },
+  "packages": ["git", "base-devel", "sudo", "vim", "networkmanager"],
+  "timezone": "UTC",
+  "locale_config": { "kbd_layout": "us", "sys_enc": "UTF-8", "sys_lang": "en_US" },
+  "custom_commands": [
+    "systemctl enable NetworkManager.service",
+    "printf '\\nSharkOS base system. Finish setup with:\\n  curl -fsSL https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/install.sh | bash\\n\\n' > /etc/motd"
+  ]
+}

@@ -17,13 +17,30 @@ A minimal, opinionated Arch Linux desktop built on Hyprland.
 
 ## Install
 
-Start with a base Arch Linux installation, then:
+**From the SharkOS ISO** (recommended): boot the ISO and run `sharkos-install`. It
+installs a base Arch system, then prints the one-liner below to finish setup after reboot.
+
+**On an existing Arch install:**
 
 ```bash
-curl -fsSL http://sharkos.io/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/install.sh | bash
 ```
 
 Reboot when done.
+
+## Building the ISO
+
+The ISO layers SharkOS onto Arch's official `releng` archiso profile (no fork).
+
+```bash
+sudo pacman -S --needed archiso qemu-base edk2-ovmf   # build + test deps
+./build-iso.sh                  # -> dist/sharkos-*.iso  (runs sudo mkarchiso)
+./scripts/test-iso.sh           # boot the newest ISO in QEMU (UEFI) to test
+```
+
+Install flow is two-stage (like the bootstrap above): the ISO's `sharkos-install`
+lays down base Arch via `archinstall` (disk/user interactive, SharkOS defaults from
+`iso/archinstall/sharkos.json`); after reboot the user runs `install.sh` for the desktop.
 
 ## How it works
 
@@ -73,9 +90,11 @@ config/themes/  Theming engine, templates, and the noir theme
 packages/     Package lists (pacman.txt, aur.txt)
 plymouth/     Boot splash theme
 wallpaper/    Desktop wallpapers at multiple resolutions
-scripts/      Helper scripts
+scripts/      Helper scripts (package audit, ISO test)
 greetd/       Login manager config
-install.sh    Main installer
+iso/          ISO overlay (live installer, archinstall config) layered on releng
+install.sh    Desktop setup (stage 2)
+build-iso.sh  Builds the live/installer ISO
 ```
 
 ## Requirements

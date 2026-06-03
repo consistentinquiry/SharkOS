@@ -1,0 +1,4 @@
+# Extra packages baked into the SharkOS live/installer environment.
+# (archinstall and git ship in releng already, but we pin them explicitly.)
+git
+archinstall

@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Skip live restarts when there's no running Hyprland session (e.g. during
+# install in a TTY). The rendered configs are already written and take effect
+# when the session starts.
+if [[ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]] && ! hyprctl version >/dev/null 2>&1; then
+  echo "reload-ui: no Hyprland session; skipping live reload."
+  exit 0
+fi
+
 notify-send -t 2000 "Reloading UI..." "Applying configuration changes"
 
 # Hyprland config (safe reload, no restart)

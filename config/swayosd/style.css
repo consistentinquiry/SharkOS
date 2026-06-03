@@ -4,15 +4,15 @@ window {
 }
 
 #container {
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(26, 27, 38, 0.85);
+  border: 1px solid rgba(169, 177, 214, 0.25);
   border-radius: 14px;
   padding: 12px 20px;
-  color: #ffffff;
+  color: #a9b1d6;
 }
 
 image {
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(169, 177, 214, 0.65);
   padding-right: 8px;
 }
 
@@ -21,17 +21,17 @@ scale trough {
   min-height: 6px;
   min-width: 180px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(169, 177, 214, 0.10);
 }
 
 progressbar progress,
 scale trough highlight {
-  background: #ffffff;
+  background: #7aa2f7;
   border-radius: 3px;
 }
 
 label {
   font-family: "JetBrainsMono Nerd Font", sans-serif;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(169, 177, 214, 0.9);
 }

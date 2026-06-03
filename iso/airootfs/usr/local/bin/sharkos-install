@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# SharkOS installer — runs inside the live ISO.
+# Stage 1 (here): install a base Arch system with archinstall (SharkOS defaults pre-filled).
+# Stage 2 (after reboot): log in and run the SharkOS setup to get the desktop.
+set -euo pipefail
+
+CONFIG="/root/sharkos/archinstall/sharkos.json"
+SETUP_URL="https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/install.sh"
+
+cat <<'BANNER'
+   ____  _                _     ____  ____
+  / ___|| |__   __ _ _ __| | __/ __ \/ ___|
+  \___ \| '_ \ / _` | '__| |/ / / _` \___ \
+   ___) | | | | (_| | |  |   < | (_| |___) |
+  |____/|_| |_|\__,_|_|  |_|\_\ \__,_|____/
+
+  Stage 1: base Arch install (archinstall)
+BANNER
+
+# Connectivity check (archinstall needs the network)
+if ! ping -c1 -W3 archlinux.org >/dev/null 2>&1; then
+  echo
+  echo "  !! No internet connection detected."
+  echo "     Wired should work automatically. For Wi-Fi, run:  iwctl"
+  echo "       station list ; station <dev> connect <SSID>"
+  echo
+fi
+
+echo "  Disk, hostname, user and passwords are chosen interactively."
+echo "  SharkOS defaults (kernel, PipeWire, NetworkManager, base packages) are pre-filled."
+echo
+read -rp "  Press Enter to launch archinstall (Ctrl-C to abort)... " _
+
+# Load SharkOS defaults; fall back to plain archinstall if the schema mismatches this version.
+if ! archinstall --config "$CONFIG"; then
+  echo
+  echo "  archinstall with the SharkOS config did not complete."
+  echo "  You can re-run a plain guided install with:  archinstall"
+  exit 1
+fi
+
+cat <<NEXT
+
+  ════════════════════════════════════════════════════════════
+   Base system installed. Stage 2 — after you reboot:
+     1. Remove the install media and reboot.
+     2. Log in as the user you just created.
+     3. Run the SharkOS setup:
+          curl -fsSL $SETUP_URL | bash
+     4. Reboot into SharkOS.
+  ════════════════════════════════════════════════════════════
+NEXT

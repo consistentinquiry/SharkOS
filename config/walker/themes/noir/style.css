@@ -1,8 +1,8 @@
-@define-color window_bg_color rgba(0, 0, 0, 0.55);
-@define-color accent_bg_color rgba(255, 255, 255, 0.15);
-@define-color theme_fg_color #ffffff;
-@define-color border_color rgba(255, 255, 255, 0.25);
-@define-color error_bg_color #eb4d4b;
+@define-color window_bg_color rgba(26, 27, 38, 0.55);
+@define-color accent_bg_color rgba(122, 162, 247, 0.20);
+@define-color theme_fg_color #a9b1d6;
+@define-color border_color rgba(169, 177, 214, 0.25);
+@define-color error_bg_color #f7768e;
 @define-color error_fg_color #ffffff;
 
 * {
@@ -13,8 +13,8 @@
 popover {
   background: lighter(@window_bg_color);
   border: 1px solid @border_color;
-  border-radius: 18px;
-  border-color: rgba(255, 255, 255, 0.25);
+  border-radius: 0px;
+  border-color: rgba(169, 177, 214, 0.25);
   padding: 10px;
 }
 
@@ -36,8 +36,8 @@ scrollbar {
     0 15px 12px rgba(0, 0, 0, 0.35);
   background: @window_bg_color;
   padding: 20px;
-  border-radius: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 0px;
+  border: 2px solid rgba(169, 177, 214, 0.8);
 }
 
 .preview-box,
@@ -51,7 +51,7 @@ scrollbar {
 }
 
 .search-container {
-  border-radius: 10px;
+  border-radius: 0px;
 }
 
 .input placeholder {
@@ -59,21 +59,21 @@ scrollbar {
 }
 
 .input selection {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(122, 162, 247, 0.15);
 }
 
 .input {
   caret-color: @theme_fg_color;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(169, 177, 214, 0.08);
   padding: 10px;
   color: @theme_fg_color;
   border: 1px solid @border_color;
-  border-radius: 10px;
+  border-radius: 0px;
 }
 
 .input:focus,
 .input:active {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(169, 177, 214, 0.4);
 }
 
 .content-container {
@@ -87,19 +87,19 @@ scrollbar {
 }
 
 .item-box {
-  border-radius: 10px;
+  border-radius: 0px;
   padding: 10px;
 }
 
 .item-quick-activation {
-  background: rgba(255, 255, 255, 0.10);
-  border-radius: 5px;
+  background: rgba(169, 177, 214, 0.10);
+  border-radius: 0px;
   padding: 10px;
 }
 
 child:selected .item-box,
 row:selected .item-box {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(122, 162, 247, 0.20);
   border: 1px solid @border_color;
 }
 
@@ -122,7 +122,7 @@ row:selected .item-box {
 
 .preview {
   border: 1px solid @border_color;
-  border-radius: 10px;
+  border-radius: 0px;
   color: @theme_fg_color;
 }
 
@@ -156,7 +156,7 @@ row:selected .item-box {
 
 .keybinds {
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(169, 177, 214, 0.12);
   font-size: 12px;
   color: @theme_fg_color;
 }
@@ -176,15 +176,15 @@ row:selected .item-box {
 
 .keybind-label {
   padding: 2px 4px;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0px;
+  border: 1px solid rgba(169, 177, 214, 0.25);
 }
 
 .error {
   padding: 10px;
   background: @error_bg_color;
   color: @error_fg_color;
-  border-radius: 10px;
+  border-radius: 0px;
 }
 
 :not(.calc).current {
