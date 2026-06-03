@@ -19,6 +19,13 @@ echo "==> Preparing profile from releng"
 rm -rf "$PROFILE"; mkdir -p "$PROFILE" "$OUT"
 cp -a "$RELENG/." "$PROFILE/"
 
+# mkarchiso records per-stage "run_once" sentinels in the work dir and skips any
+# stage whose sentinel exists. A leftover work dir therefore makes a rebuild a
+# silent no-op (it never re-creates the ISO). Always start from a clean one.
+# (Owned by root from the previous sudo mkarchiso run, so remove with sudo.)
+echo "==> Clearing previous work dir"
+sudo rm -rf "$WORK/work"
+
 echo "==> Applying SharkOS overlay"
 # Files baked into the live environment (installer, motd, ...)
 cp -a "$REPO/iso/airootfs/." "$PROFILE/airootfs/"
