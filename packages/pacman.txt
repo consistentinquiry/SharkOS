@@ -18,9 +18,16 @@ vulkan-icd-loader
 # Status bar & notifications
 waybar
 mako
+libnotify
 
 # Terminal
 ghostty
+
+# Control center (Python/GTK layer-shell popup + waybar module)
+python
+python-gobject
+gtk3
+gtk-layer-shell
 
 # Audio (PipeWire stack)
 pipewire-alsa
