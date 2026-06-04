@@ -13,7 +13,9 @@ set -uo pipefail
 
 DONE_MARKER="/var/lib/sharkos/.firstboot-done"
 SUDO_DROPIN="/etc/sudoers.d/99-sharkos-firstboot"
+SWAPFILE="/var/lib/sharkos/install-swap"
 SETUP_URL="https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/install.sh"
+made_swap=0
 
 mkdir -p "$(dirname "$DONE_MARKER")"
 [ -e "$DONE_MARKER" ] && exit 0
@@ -45,13 +47,41 @@ if [ "$connected" -ne 1 ]; then
   exit 1
 fi
 
-# Always remove the passwordless-sudo grant on exit, however we leave.
-cleanup() { rm -f "$SUDO_DROPIN"; }
+# Always undo our temporary changes on exit, however we leave.
+cleanup() {
+  rm -f "$SUDO_DROPIN"
+  if [ "${made_swap:-0}" -eq 1 ]; then
+    swapoff "$SWAPFILE" 2>/dev/null || true
+    rm -f "$SWAPFILE"
+  fi
+}
 trap cleanup EXIT
 
 # Open the temporary passwordless-sudo window for the install run only.
 printf '%s ALL=(ALL) NOPASSWD: ALL\n' "$USERNAME" > "$SUDO_DROPIN"
 chmod 440 "$SUDO_DROPIN"
+
+# Rust AUR packages (e.g. swayosd-git) build with LTO and spawn one rustc per
+# core, each needing ~1.5-2 GiB. On small machines that exhausts RAM and rustc
+# gets OOM-killed. If there's little RAM and no real swap, add a temporary
+# swapfile for the build; cleanup() removes it when we're done.
+mem_kb=$(awk '/^MemTotal:/{print $2}' /proc/meminfo 2>/dev/null || echo 0)
+swap_kb=$(awk '/^SwapTotal:/{print $2}' /proc/meminfo 2>/dev/null || echo 0)
+if [ "${swap_kb:-0}" -lt 1048576 ] && [ "${mem_kb:-0}" -lt 8388608 ]; then
+  echo "  Low memory and no swap; adding a temporary 8 GiB swapfile for the build..."
+  if fallocate -l 8G "$SWAPFILE" 2>/dev/null || \
+     dd if=/dev/zero of="$SWAPFILE" bs=1M count=8192 status=none 2>/dev/null; then
+    chmod 600 "$SWAPFILE"
+    if mkswap "$SWAPFILE" >/dev/null 2>&1 && swapon "$SWAPFILE" 2>/dev/null; then
+      made_swap=1
+    else
+      rm -f "$SWAPFILE"
+      echo "  !! Could not enable swap; continuing (build may fail on low RAM)." >&2
+    fi
+  else
+    echo "  !! Not enough disk for a swapfile; continuing without it." >&2
+  fi
+fi
 
 # Run the SharkOS desktop installer as the user (login shell sets HOME/USER).
 # Download to a file and verify it FIRST, rather than `curl | bash`: a 404 or

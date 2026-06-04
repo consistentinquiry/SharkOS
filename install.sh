@@ -125,8 +125,16 @@ bash "$SHARKOS_DIR/scripts/select_wallpaper.sh"
 info "Generating themes..."
 OMARCHY_DIR="$HOME/Git/omarchy"
 if [[ ! -d "$OMARCHY_DIR/.git" ]]; then
-    info "  Cloning upstream omarchy (theme source)..."
-    git clone --depth 1 https://github.com/basecamp/omarchy.git "$OMARCHY_DIR"
+    # We only use omarchy as a palette/wallpaper source, so fetch just
+    # themes/<name>/colors.toml + backgrounds/ — not the whole project, and
+    # not the per-theme preview/unlock images or app theme files. Shallow +
+    # blobless + sparse (non-cone patterns) keeps the download minimal.
+    info "  Fetching upstream omarchy theme palettes + wallpapers (sparse)..."
+    git clone --depth 1 --filter=blob:none --no-checkout \
+        https://github.com/basecamp/omarchy.git "$OMARCHY_DIR"
+    git -C "$OMARCHY_DIR" sparse-checkout set --no-cone \
+        '/themes/*/colors.toml' '/themes/*/backgrounds/'
+    git -C "$OMARCHY_DIR" checkout
 else
     git -C "$OMARCHY_DIR" pull --ff-only || true
 fi
@@ -152,34 +160,22 @@ patch_hooks() {
     info "  Updated mkinitcpio HOOKS"
 }
 
-if echo "$CURRENT_HOOKS" | grep -q 'sd-encrypt'; then
-    # systemd-based LUKS
-    info "  Detected systemd-based LUKS encryption"
-    if ! echo "$CURRENT_HOOKS" | grep -q 'sd-plymouth'; then
-        NEW_HOOKS=$(echo "$CURRENT_HOOKS" | sed 's/kms/kms sd-plymouth/')
-        patch_hooks "$NEW_HOOKS"
-    else
-        ok "  sd-plymouth already in HOOKS"
-    fi
-elif echo "$CURRENT_HOOKS" | grep -q 'encrypt'; then
-    # Traditional LUKS
-    info "  Detected traditional LUKS encryption"
-    if ! echo "$CURRENT_HOOKS" | grep -q 'plymouth-encrypt'; then
-        # Add plymouth after kms, replace encrypt with plymouth-encrypt
-        NEW_HOOKS=$(echo "$CURRENT_HOOKS" | sed 's/kms/kms plymouth/' | sed 's/ encrypt/ plymouth-encrypt/')
-        patch_hooks "$NEW_HOOKS"
-    else
-        ok "  plymouth-encrypt already in HOOKS"
-    fi
+# Add the `plymouth` initcpio hook. NOTE: current plymouth ships only the
+# `plymouth` hook — `plymouth-encrypt` and `sd-plymouth` were removed upstream,
+# so we must not reference them. Place plymouth early so the splash is up
+# before the LUKS prompt: after `systemd` on a systemd initramfs (where
+# systemd-ask-password renders the *themed* prompt via Plymouth), otherwise
+# after `kms`. (A busybox `encrypt` setup gets the splash but an unthemed
+# prompt, since that hook has no Plymouth integration — SharkOS installs use
+# sd-encrypt for the themed prompt.)
+if echo "$CURRENT_HOOKS" | grep -qw 'plymouth'; then
+    ok "  plymouth hook already present"
+elif echo "$CURRENT_HOOKS" | grep -qw 'systemd'; then
+    info "  systemd initramfs detected — adding plymouth after systemd"
+    patch_hooks "$(echo "$CURRENT_HOOKS" | sed 's/\bsystemd\b/systemd plymouth/')"
 else
-    # No encryption
-    info "  No LUKS encryption detected"
-    if ! echo "$CURRENT_HOOKS" | grep -q 'plymouth'; then
-        NEW_HOOKS=$(echo "$CURRENT_HOOKS" | sed 's/kms/kms plymouth/')
-        patch_hooks "$NEW_HOOKS"
-    else
-        ok "  plymouth already in HOOKS"
-    fi
+    info "  busybox initramfs detected — adding plymouth after kms"
+    patch_hooks "$(echo "$CURRENT_HOOKS" | sed 's/\bkms\b/kms plymouth/')"
 fi
 
 # Ensure kms hook is present (required for Plymouth)

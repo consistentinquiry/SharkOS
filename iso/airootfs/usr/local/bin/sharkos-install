@@ -311,9 +311,13 @@ cat > /etc/hosts <<HOSTS
 127.0.1.1   $HOSTNAME.localdomain $HOSTNAME
 HOSTS
 
-# initramfs: add the encrypt hook (after block, before filesystems) so the
-# root LUKS volume is unlocked during early boot.
-sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt filesystems fsck)/' /etc/mkinitcpio.conf
+# initramfs: systemd-based with sd-encrypt to unlock the root LUKS volume in
+# early boot. systemd (not busybox) is required so the desktop layer can later
+# add the `plymouth` hook for a *themed* unlock prompt — systemd-ask-password
+# routes through Plymouth, whereas the busybox `encrypt` hook does not.
+# (No `plymouth` hook here: plymouth isn't installed in the base; install.sh
+#  adds it on first boot.) sd-vconsole applies KEYMAP/FONT from vconsole.conf.
+sed -i 's/^HOOKS=.*/HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt filesystems fsck)/' /etc/mkinitcpio.conf
 mkinitcpio -P
 
 # User: member of wheel, passwordless-free sudo via wheel rule. Root locked.
@@ -337,7 +341,7 @@ title   SharkOS
 linux   /vmlinuz-linux
 $UCODE_INITRD_LINE
 initrd  /initramfs-linux.img
-options cryptdevice=UUID=$LUKS_UUID:$CRYPT_NAME root=/dev/mapper/$CRYPT_NAME rw
+options rd.luks.name=$LUKS_UUID=$CRYPT_NAME root=/dev/mapper/$CRYPT_NAME rw
 ENTRY
 
 # Services + first-boot desktop stage
