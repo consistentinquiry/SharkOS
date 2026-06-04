@@ -29,11 +29,26 @@ sudo rm -rf "$WORK/work"
 echo "==> Applying SharkOS overlay"
 # Files baked into the live environment (installer, motd, ...)
 cp -a "$REPO/iso/airootfs/." "$PROFILE/airootfs/"
-# Ship the archinstall config template into the live env
-install -Dm644 "$REPO/iso/archinstall/sharkos.json" \
-  "$PROFILE/airootfs/root/sharkos/archinstall/sharkos.json"
+# Bake the first-boot desktop stage (iso/target/) into the live env so the
+# installer can lay it into the new system offline. Staged under a neutral
+# path (not its real home) so the unit isn't active in the live env itself;
+# sharkos-install copies it into place during install.
+mkdir -p "$PROFILE/airootfs/usr/local/share/sharkos/target"
+cp -a "$REPO/iso/target/." "$PROFILE/airootfs/usr/local/share/sharkos/target/"
 # Extra packages for the live environment
 cat "$REPO/iso/packages.x86_64.extra" >> "$PROFILE/packages.x86_64"
+
+echo "==> Adding live-ISO boot splash (Plymouth)"
+# Ship the SharkOS Plymouth theme into the live env (plymouthd.conf in our
+# airootfs already points the daemon at it).
+mkdir -p "$PROFILE/airootfs/usr/share/plymouth/themes/sharkos"
+cp -a "$REPO/plymouth/sharkos/." "$PROFILE/airootfs/usr/share/plymouth/themes/sharkos/"
+# Add the `plymouth` hook to the live initramfs, right after `kms` (needs the
+# DRM driver loaded first). String-based so it tolerates HOOKS list changes.
+ARCHISO_HOOKS="$PROFILE/airootfs/etc/mkinitcpio.conf.d/archiso.conf"
+if [[ -f "$ARCHISO_HOOKS" ]] && ! grep -q 'plymouth' "$ARCHISO_HOOKS"; then
+  sed -i 's/ kms / kms plymouth /' "$ARCHISO_HOOKS"
+fi
 
 echo "==> Branding profiledef.sh"
 sed -i \
@@ -49,11 +64,15 @@ echo "==> Rebranding boot menus"
 # Rewrite the boot-loader menu labels across whichever bootloaders releng ships
 # (systemd-boot: efiboot/, GRUB: grub/, BIOS: syslinux/). String-based so it
 # survives archiso layout changes between versions.
+# The cmdline edit appends `quiet splash` to every kernel line (matched by the
+# archisobasedir= param common to all bootloaders) so Plymouth shows on boot.
+# Drop `quiet` if you'd rather keep boot diagnostics visible on install media.
 for d in efiboot grub syslinux; do
   [[ -d "$PROFILE/$d" ]] && find "$PROFILE/$d" -type f -exec sed -i \
     -e 's/Arch Linux install medium/SharkOS Installer/g' \
     -e 's/^\(\s*MENU TITLE\) .*/\1 SharkOS/' \
     -e 's/Arch Linux (\(.*\))/SharkOS (\1)/g' \
+    -e '/archisobasedir=%INSTALL_DIR%/ s/$/ quiet splash/' \
     {} +
 done
 

@@ -54,7 +54,30 @@ printf '%s ALL=(ALL) NOPASSWD: ALL\n' "$USERNAME" > "$SUDO_DROPIN"
 chmod 440 "$SUDO_DROPIN"
 
 # Run the SharkOS desktop installer as the user (login shell sets HOME/USER).
-if runuser -l "$USERNAME" -c "curl -fsSL '$SETUP_URL' | bash"; then
+# Download to a file and verify it FIRST, rather than `curl | bash`: a 404 or
+# DNS failure makes `curl -f` emit nothing and exit non-zero, but piping that
+# to bash would run an empty script that exits 0 — falsely marking first-boot
+# "done" and leaving an empty system with no retry. Downloading first makes a
+# fetch failure abort here (no marker → retried next boot).
+SCRIPT="$(runuser -l "$USERNAME" -c 'mktemp /tmp/sharkos-install.XXXXXX')"
+
+install_ok=0
+if ! runuser -l "$USERNAME" -c "curl -fsSL '$SETUP_URL' -o '$SCRIPT'"; then
+  echo "  !! Could not download the SharkOS installer from:" >&2
+  echo "     $SETUP_URL" >&2
+  echo "     (A private repo returns 404 here; check network/DNS and repo access.)" >&2
+elif ! runuser -l "$USERNAME" -c "test -s '$SCRIPT'"; then
+  echo "  !! Downloaded installer is empty — aborting." >&2
+elif runuser -l "$USERNAME" -c "script -qefc 'bash $SCRIPT' /dev/null"; then
+  # Run under `script` so the install gets a pseudo-tty. yay/makepkg open
+  # /dev/tty for their prompts; without a controlling terminal (this is a
+  # oneshot service) they fail with "open /dev/tty: no such device". The pty
+  # also means --noconfirm prompts auto-proceed instead of erroring.
+  install_ok=1
+fi
+runuser -l "$USERNAME" -c "rm -f '$SCRIPT'" 2>/dev/null || true
+
+if [ "$install_ok" -eq 1 ]; then
   touch "$DONE_MARKER"
   cleanup; trap - EXIT
   systemctl disable sharkos-firstboot.service >/dev/null 2>&1 || true
@@ -65,6 +88,6 @@ if runuser -l "$USERNAME" -c "curl -fsSL '$SETUP_URL' | bash"; then
 else
   echo
   echo "  !! SharkOS desktop install did not complete; will retry on next boot." >&2
-  echo "     (Network or AUR build failures are the usual cause.)" >&2
+  echo "     (Network/DNS, private-repo access, or AUR build failures are the usual causes.)" >&2
   exit 1
 fi

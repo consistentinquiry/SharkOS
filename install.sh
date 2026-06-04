@@ -62,13 +62,16 @@ grep -v '^#' packages/pacman.txt | grep -v '^$' | \
 
 # ── Install AUR packages ─────────────────────────────────────────────
 info "Installing AUR packages..."
-grep -v '^#' packages/aur.txt | grep -v '^$' | \
-    yay -S --needed --noconfirm -
+# Non-interactive flags so the AUR build never tries to open /dev/tty for a
+# diff/edit/clean/provider menu (which fails outside a real terminal).
+YAY_FLAGS=(--needed --noconfirm --answerdiff=None --answeredit=None --answerclean=None --removemake)
+grep -vE '^#|^$' packages/aur.txt | \
+    yay -S "${YAY_FLAGS[@]}" -
 
 # ── Hardware detection ────────────────────────────────────────────────
 if [[ -d /sys/module/asus_wmi ]] || dmidecode -s system-manufacturer 2>/dev/null | grep -qi asus; then
     info "ASUS hardware detected, installing asusctl..."
-    yay -S --needed --noconfirm asusctl
+    yay -S "${YAY_FLAGS[@]}" asusctl
     ok "asusctl installed."
 else
     info "Non-ASUS hardware detected, skipping asusctl."

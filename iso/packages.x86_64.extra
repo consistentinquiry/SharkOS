@@ -1,4 +1,9 @@
 # Extra packages baked into the SharkOS live/installer environment.
-# (archinstall and git ship in releng already, but we pin them explicitly.)
+# sharkos-install (v2) is a pacstrap pipeline, not archinstall:
+#   gum        — interactive prompts in the installer
+#   cryptsetup — LUKS setup (also in releng, pinned here for clarity)
+#   plymouth   — branded boot splash on the live ISO itself
 git
-archinstall
+gum
+cryptsetup
+plymouth

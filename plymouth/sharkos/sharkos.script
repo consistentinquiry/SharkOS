@@ -2,59 +2,79 @@
 # Supports both standard boot and LUKS password entry
 
 # ── Background ────────────────────────────────────────────────────────
-Window.SetBackgroundTopColor(0.118, 0.118, 0.180);     # #1e1e2e (Catppuccin Mocha base)
-Window.SetBackgroundBottomColor(0.071, 0.071, 0.110);  # #12121c (slightly darker)
+Window.SetBackgroundTopColor(0.0, 0.0, 0.0);     # solid black
+Window.SetBackgroundBottomColor(0.0, 0.0, 0.0);  # solid black
 
-# ── Logo ──────────────────────────────────────────────────────────────
-logo.image = Image("logo.png");
+# ── Logo (white Braille shark) ────────────────────────────────────────
+# Scale responsively so one high-res asset works on any screen: fit within
+# 50% of width AND 40% of height, and never upscale past the native size.
+logo.orig = Image("logo.png");
+logo_sx = (Window.GetWidth()  * 0.50) / logo.orig.GetWidth();
+logo_sy = (Window.GetHeight() * 0.40) / logo.orig.GetHeight();
+logo_scale = logo_sx;
+if (logo_sy < logo_scale)
+    logo_scale = logo_sy;
+if (logo_scale > 1)
+    logo_scale = 1;
+logo.image = logo.orig.Scale(Math.Int(logo.orig.GetWidth() * logo_scale),
+                             Math.Int(logo.orig.GetHeight() * logo_scale));
 logo.sprite = Sprite(logo.image);
+
+# Logo vertical centre sits in the upper-middle so the bar/prompt fit below.
+logo_cy = Window.GetHeight() * 0.34;
 logo.sprite.SetX(Window.GetWidth() / 2 - logo.image.GetWidth() / 2);
-logo.sprite.SetY(Window.GetHeight() / 2 - logo.image.GetHeight() / 2 - 80);
+logo.sprite.SetY(logo_cy - logo.image.GetHeight() / 2);
 logo.sprite.SetZ(10);
+logo_bottom = logo_cy + logo.image.GetHeight() / 2;
 
-# ── Progress dots ─────────────────────────────────────────────────────
-# Animated dots below the logo during boot
-NUM_DOTS = 5;
-DOT_SIZE = 10;
-DOT_SPACING = 24;
+# ── Progress bar ──────────────────────────────────────────────────────
+# Solid bar below the logo: a dim full-width track with a bright fill that
+# grows with boot progress (replaces the earlier animated dots).
+BAR_WIDTH = 260;
+BAR_HEIGHT = 6;
+bar_x = Window.GetWidth() / 2 - BAR_WIDTH / 2;
+bar_y = Math.Int(logo_bottom) + 28;
 
-for (i = 0; i < NUM_DOTS; i++) {
-    dots[i].image = Image("bullet.png");
-    dots[i].sprite = Sprite(dots[i].image);
-    dots[i].x = Window.GetWidth() / 2 - ((NUM_DOTS * DOT_SPACING) / 2) + (i * DOT_SPACING);
-    dots[i].y = Window.GetHeight() / 2 + logo.image.GetHeight() / 2 - 40;
-    dots[i].sprite.SetPosition(dots[i].x, dots[i].y, 10);
-    dots[i].sprite.SetOpacity(0.3);
-}
+bar.image = Image("bar.png");
+
+# Track: dim, full width.
+track.sprite = Sprite(bar.image.Scale(BAR_WIDTH, BAR_HEIGHT));
+track.sprite.SetPosition(bar_x, bar_y, 10);
+track.sprite.SetOpacity(0.18);
+
+# Fill: bright, width driven by progress.
+fill.sprite = Sprite(bar.image.Scale(1, BAR_HEIGHT));
+fill.sprite.SetPosition(bar_x, bar_y, 11);
+fill.sprite.SetOpacity(1.0);
 
 progress = 0;
 
+fun set_fill(frac) {
+    if (frac < 0) frac = 0;
+    if (frac > 1) frac = 1;
+    w = Math.Int(frac * BAR_WIDTH);
+    if (w < 1) w = 1;
+    fill.sprite.SetImage(bar.image.Scale(w, BAR_HEIGHT));
+}
+
 fun boot_progress_callback(duration, percent) {
     progress = percent;
-    active_dot = Math.Int(percent * NUM_DOTS);
-    for (i = 0; i < NUM_DOTS; i++) {
-        if (i <= active_dot)
-            dots[i].sprite.SetOpacity(1.0);
-        else
-            dots[i].sprite.SetOpacity(0.3);
-    }
+    set_fill(percent);
 }
 
 Plymouth.SetBootProgressFunction(boot_progress_callback);
 
 # ── Refresh (animation) ──────────────────────────────────────────────
+# Until real boot progress arrives, sweep the fill back and forth so the bar
+# is never dead on fast/quiet boots. Once progress reports in, it takes over.
 counter = 0;
 fun refresh_callback() {
     counter++;
-    # Gentle pulse on the active dot
-    pulse = Math.Int(counter / 15) % NUM_DOTS;
-    for (i = 0; i < NUM_DOTS; i++) {
-        if (progress < 1.0) {
-            if (i == pulse)
-                dots[i].sprite.SetOpacity(1.0);
-            else if (dots[i].sprite.GetOpacity() > 0.3)
-                dots[i].sprite.SetOpacity(dots[i].sprite.GetOpacity() - 0.05);
-        }
+    if (progress < 0.02) {
+        phase = counter % 200;
+        if (phase > 100)
+            phase = 200 - phase;
+        set_fill(phase / 100);
     }
 }
 
@@ -72,9 +92,9 @@ lock_sprite = NULL;
 prompt_sprite = NULL;
 
 fun display_password_callback(prompt_text, bullets) {
-    # Entry box centered below logo
+    # Entry box in the lower third, clear of the logo and progress bar above.
     entry_x = Window.GetWidth() / 2 - entry.image.GetWidth() / 2;
-    entry_y = Window.GetHeight() / 2 + 40;
+    entry_y = Math.Int(Window.GetHeight() * 0.62);
 
     if (password_entry_sprite == NULL) {
         password_entry_sprite = Sprite(entry.image);
@@ -131,8 +151,8 @@ Plymouth.SetMessageFunction(message_callback);
 # ── Quit ──────────────────────────────────────────────────────────────
 fun quit_callback() {
     logo.sprite.SetOpacity(0);
-    for (i = 0; i < NUM_DOTS; i++)
-        dots[i].sprite.SetOpacity(0);
+    track.sprite.SetOpacity(0);
+    fill.sprite.SetOpacity(0);
 }
 
 Plymouth.SetQuitFunction(quit_callback);

@@ -1,12 +1,131 @@
 #!/usr/bin/env bash
-# SharkOS installer — runs inside the live ISO.
-# Stage 1 (here): install a base Arch system with archinstall (SharkOS defaults pre-filled),
-#   and enable sharkos-firstboot.service to finish setup automatically.
-# Stage 2 (first boot): sharkos-firstboot runs install.sh to set up the desktop, then reboots.
+# ┌──────────────────────────────────────────────────────────────────┐
+# │  SharkOS installer v2 — runs inside the live ISO.                 │
+# │                                                                    │
+# │  Replaces archinstall with an opinionated pacstrap pipeline:       │
+# │    • UEFI only.                                                     │
+# │    • One whole disk, wiped — no partition choices.                 │
+# │    • LUKS2 full-disk encryption is MANDATORY.                      │
+# │    • systemd-boot, ext4 root, en_US/UTC/us defaults.              │
+# │                                                                    │
+# │  Layout written to the chosen disk:                                │
+# │    p1  1 GiB  FAT32  ESP, mounted /boot (holds kernel+initramfs,   │
+# │               unencrypted so the bootloader can read it)           │
+# │    p2  rest   LUKS2 → ext4  encrypted root (unlocked at boot)      │
+# │                                                                    │
+# │  Stage 2 (first boot): sharkos-firstboot runs install.sh to set    │
+# │  up the desktop, then reboots into SharkOS.                        │
+# └──────────────────────────────────────────────────────────────────┘
 set -euo pipefail
 
-CONFIG="/root/sharkos/archinstall/sharkos.json"
+# ── Opinionated defaults (timezone/keymap are prompted below) ────────
+LOCALE="en_US.UTF-8"
+ESP_SIZE="+1GiB"
+CRYPT_NAME="cryptroot"
 
+# First-boot desktop installer + unit, baked into the ISO by build-iso.sh
+# so install works offline. Falls back to GitHub if the staging dir is
+# absent (e.g. running this script outside a freshly built ISO).
+TARGET_STAGE="/usr/local/share/sharkos/target"
+FIRSTBOOT_URL="https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/iso/target/usr/local/bin/sharkos-firstboot"
+FIRSTBOOT_SVC_URL="https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/iso/target/etc/systemd/system/sharkos-firstboot.service"
+
+# Base package set for the installed system. Desktop packages come later
+# (sharkos-firstboot → install.sh); this is just a bootable base + the
+# pieces the encrypted boot path and first-boot stage need.
+BASE_PKGS=(
+  base linux linux-firmware
+  cryptsetup            # required by the initramfs `encrypt` hook
+  networkmanager        # first boot needs the network
+  sudo vim git base-devel curl
+)
+
+# ── Helpers ──────────────────────────────────────────────────────────
+die() { gum style --foreground 1 "  ✗ $*" 2>/dev/null || echo "  ✗ $*" >&2; exit 1; }
+info() { gum style --foreground 6 "  $*" 2>/dev/null || echo "  $*"; }
+
+# Partition node for a disk: nvme/mmc/loop devices use a `p` separator.
+partition_of() {
+  local disk=$1 num=$2
+  case "$disk" in
+    *nvme*|*mmcblk*|*loop*) echo "${disk}p${num}" ;;
+    *) echo "${disk}${num}" ;;
+  esac
+}
+
+# Read a non-empty secret twice and require a match. Echoes it on stdout.
+read_secret() {
+  local label=$1 a b
+  while true; do
+    a=$(gum input --password --placeholder "$label")
+    b=$(gum input --password --placeholder "Confirm $label")
+    if [[ -z "$a" ]]; then
+      gum style --foreground 1 "  $label cannot be empty." >&2; continue
+    fi
+    if [[ "$a" != "$b" ]]; then
+      gum style --foreground 1 "  $label entries did not match — try again." >&2; continue
+    fi
+    printf '%s' "$a"; return 0
+  done
+}
+
+online() { ping -c1 -W3 archlinux.org >/dev/null 2>&1; }
+
+# Connect Wi-Fi in the live env via iwd. On success, stashes the SSID/PSK in
+# WIFI_SSID/WIFI_PSK so they can be persisted into the installed system later.
+connect_wifi() {
+  local dev ssid psk i
+  dev=$(iw dev 2>/dev/null | awk '$1=="Interface"{print $2; exit}')
+  [[ -n "$dev" ]] || { gum style --foreground 1 "  No Wi-Fi device found." >&2; return 1; }
+
+  info "Scanning for networks on $dev..."
+  iwctl station "$dev" scan >/dev/null 2>&1 || true
+  sleep 2
+  # Show what's visible (strip iwctl's colour codes); SSIDs can contain
+  # spaces, so we let the user type the exact name rather than parse columns.
+  iwctl station "$dev" get-networks 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | sed -n '5,$p'
+
+  ssid=$(gum input --placeholder "Wi-Fi network name (SSID)")
+  [[ -n "$ssid" ]] || return 1
+  psk=$(read_secret "Wi-Fi password")
+
+  info "Connecting to '$ssid'..."
+  if ! iwctl --passphrase "$psk" station "$dev" connect "$ssid"; then
+    gum style --foreground 1 "  Connection failed (wrong password or out of range?)." >&2
+    return 1
+  fi
+  for i in $(seq 1 10); do online && break; sleep 1; done
+  WIFI_SSID="$ssid"; WIFI_PSK="$psk"
+  online
+}
+
+# Make sure we have internet before pacstrap (and warn that first-boot needs
+# it too). Returns non-zero only if the user explicitly chooses to go offline.
+ensure_network() {
+  online && { info "Network is up."; return 0; }
+  while true; do
+    info "No internet connection yet. Pick how to connect:"
+    case "$(printf '%s\n' \
+        "Retry — I just plugged in an Ethernet cable" \
+        "Connect to Wi-Fi" \
+        "Continue offline (NOT recommended)" | gum choose)" in
+      Retry*)
+        online && { info "Network is up."; return 0; }
+        gum style --foreground 1 "  Still no connection." ;;
+      Connect*)
+        connect_wifi && { info "Wi-Fi connected."; return 0; } ;;
+      Continue*)
+        gum confirm "Offline: the first-boot desktop install WILL fail until you connect later. Proceed anyway?" \
+          && return 1 ;;
+      *) ;;  # Esc/empty → loop again
+    esac
+  done
+}
+
+# ── Banner ───────────────────────────────────────────────────────────
+# Crisp Terminus console font for the installer (best-effort; kbd ships it).
+setfont Lat2-Terminus16 2>/dev/null || true
+clear
 cat <<'BANNER'
    ____  _                _     ____  ____
   / ___|| |__   __ _ _ __| | __/ __ \/ ___|
@@ -14,41 +133,246 @@ cat <<'BANNER'
    ___) | | | | (_| | |  |   < | (_| |___) |
   |____/|_| |_|\__,_|_|  |_|\_\ \__,_|____/
 
-  Stage 1: base Arch install (archinstall)
 BANNER
+echo
 
-# Connectivity check (archinstall needs the network)
-if ! ping -c1 -W3 archlinux.org >/dev/null 2>&1; then
-  echo
-  echo "  !! No internet connection detected."
-  echo "     Wired should work automatically. For Wi-Fi, run:  iwctl"
-  echo "       station list ; station <dev> connect <SSID>"
-  echo
+# ── Preflight ────────────────────────────────────────────────────────
+[[ $EUID -eq 0 ]] || die "Must run as root (you should be, on the live ISO)."
+command -v gum >/dev/null || die "gum is missing from the live environment."
+[[ -d /sys/firmware/efi/efivars ]] || \
+  die "Not booted in UEFI mode. SharkOS requires UEFI — reboot the firmware/VM in UEFI mode."
+
+# Internet is needed now (pacstrap) and again at first boot (desktop setup).
+# A returned non-zero means the user knowingly chose to proceed offline.
+ensure_network || true
+
+# ── Disk selection (one disk, whole-disk, no partition options) ──────
+mapfile -t DISK_LINES < <(lsblk -dpno NAME,SIZE,MODEL,TYPE | awk '$NF=="disk"{$NF=""; sub(/[ \t]+$/,""); print}')
+[[ ${#DISK_LINES[@]} -gt 0 ]] || die "No disks found."
+
+info "Select the disk to ERASE and install SharkOS onto:"
+CHOICE=$(printf '%s\n' "${DISK_LINES[@]}" | gum choose) || die "No disk selected."
+DISK=$(awk '{print $1}' <<<"$CHOICE")
+[[ -b "$DISK" ]] || die "Not a block device: $DISK"
+
+echo
+gum style --foreground 1 --border double --padding "0 2" \
+  "ALL DATA ON $DISK WILL BE PERMANENTLY ERASED."
+gum confirm "Erase $DISK and install SharkOS?" || die "Aborted by user."
+# Second guard — this is irreversible.
+gum confirm "Are you absolutely sure? This cannot be undone." || die "Aborted by user."
+
+# ── Collect the rest of the answers ──────────────────────────────────
+HOSTNAME=$(gum input --placeholder "Hostname (e.g. sharkos)" --value "sharkos")
+HOSTNAME=${HOSTNAME:-sharkos}
+
+USERNAME=$(gum input --placeholder "Primary username")
+[[ "$USERNAME" =~ ^[a-z_][a-z0-9_-]*$ ]] || die "Invalid username: '$USERNAME'."
+
+info "Set the LUKS disk-encryption passphrase (typed at every boot)."
+LUKS_PASS=$(read_secret "Disk encryption passphrase")
+
+info "Set the password for user '$USERNAME'."
+USER_PASS=$(read_secret "Password for $USERNAME")
+
+# Timezone (fuzzy-search the full tz list; default UTC if skipped).
+info "Choose your timezone (type to filter, Esc for UTC)."
+TIMEZONE=$( (timedatectl list-timezones 2>/dev/null || echo UTC) \
+  | gum filter --placeholder "Timezone, e.g. Europe/London" --height 15 ) || true
+TIMEZONE=${TIMEZONE:-UTC}
+
+# Console keymap (default us if skipped).
+info "Choose your console keymap (type to filter, Esc for us)."
+KEYMAP=$( (localectl list-keymaps 2>/dev/null || echo us) \
+  | gum filter --placeholder "Keymap, e.g. us, uk, de" --height 15 ) || true
+KEYMAP=${KEYMAP:-us}
+
+# CPU microcode (best-effort; harmless if the wrong one is skipped).
+if grep -q AuthenticAMD /proc/cpuinfo; then
+  UCODE_PKG="amd-ucode"; UCODE_IMG="amd-ucode.img"
+elif grep -q GenuineIntel /proc/cpuinfo; then
+  UCODE_PKG="intel-ucode"; UCODE_IMG="intel-ucode.img"
+else
+  UCODE_PKG=""; UCODE_IMG=""
 fi
 
-echo "  Disk, hostname, user and passwords are chosen interactively."
-echo "  SharkOS defaults (kernel, PipeWire, NetworkManager, base packages) are pre-filled."
-echo
-echo "  IMPORTANT: mark your user account as a SUPERUSER in the menu — the SharkOS"
-echo "  desktop install on first boot needs sudo access."
-echo
-read -rp "  Press Enter to launch archinstall (Ctrl-C to abort)... " _
+P1=$(partition_of "$DISK" 1)   # ESP
+P2=$(partition_of "$DISK" 2)   # LUKS container
 
-# Load SharkOS defaults; fall back to plain archinstall if the schema mismatches this version.
-if ! archinstall --config "$CONFIG"; then
-  echo
-  echo "  archinstall with the SharkOS config did not complete."
-  echo "  You can re-run a plain guided install with:  archinstall"
-  exit 1
+# ── Partition ────────────────────────────────────────────────────────
+info "Partitioning $DISK (GPT: ESP + LUKS root)..."
+wipefs -af "$DISK" >/dev/null
+sgdisk -Z "$DISK" >/dev/null
+sgdisk \
+  -n "1:0:${ESP_SIZE}" -t 1:ef00 -c 1:"EFI System" \
+  -n "2:0:0"           -t 2:8309 -c 2:"SharkOS LUKS" \
+  "$DISK" >/dev/null
+partprobe "$DISK"; udevadm settle
+
+# ── Encrypt + format ─────────────────────────────────────────────────
+info "Creating LUKS2 container on $P2..."
+printf '%s' "$LUKS_PASS" | cryptsetup luksFormat --type luks2 --batch-mode "$P2" -
+printf '%s' "$LUKS_PASS" | cryptsetup open "$P2" "$CRYPT_NAME" -
+
+info "Formatting filesystems..."
+mkfs.fat -F32 -n EFI "$P1" >/dev/null
+mkfs.ext4 -qF -L sharkos-root "/dev/mapper/$CRYPT_NAME"
+
+mount "/dev/mapper/$CRYPT_NAME" /mnt
+mount --mkdir "$P1" /mnt/boot
+
+# ── Install base system ──────────────────────────────────────────────
+PKGS=("${BASE_PKGS[@]}")
+[[ -n "$UCODE_PKG" ]] && PKGS+=("$UCODE_PKG")
+# --show-error keeps the screen clean on success but surfaces the full log if
+# the step fails, so we never silently swallow a real error.
+gum spin --spinner dot --show-error \
+  --title "🦈 Installing the SharkOS base system (this takes a while)…" -- \
+  pacstrap -K /mnt "${PKGS[@]}"
+info "Base system installed."
+
+info "Generating fstab..."
+genfstab -U /mnt >> /mnt/etc/fstab
+
+# Carry the live Wi-Fi connection into the installed system. The live env
+# uses iwd; the target uses NetworkManager — so write an NM keyfile directly.
+# NetworkManager auto-connects from it on first boot (wired needs nothing).
+if [[ -n "${WIFI_SSID:-}" ]]; then
+  info "Saving Wi-Fi connection for the installed system..."
+  install -dm700 /mnt/etc/NetworkManager/system-connections
+  NMCON="/mnt/etc/NetworkManager/system-connections/${WIFI_SSID}.nmconnection"
+  cat > "$NMCON" <<NMEOF
+[connection]
+id=${WIFI_SSID}
+type=wifi
+autoconnect=true
+
+[wifi]
+mode=infrastructure
+ssid=${WIFI_SSID}
+
+[wifi-security]
+key-mgmt=wpa-psk
+psk=${WIFI_PSK}
+
+[ipv4]
+method=auto
+
+[ipv6]
+method=auto
+NMEOF
+  chmod 600 "$NMCON"   # NetworkManager refuses world-readable keyfiles
 fi
 
-cat <<'NEXT'
+# LUKS partition UUID for the kernel command line (the raw partition, not
+# the unlocked mapper device).
+LUKS_UUID=$(blkid -s UUID -o value "$P2")
+
+# Install the first-boot desktop stage into the target. Prefer the copy
+# baked into the ISO (offline); fall back to GitHub only if it's missing.
+info "Staging the first-boot desktop installer..."
+if [[ -d "$TARGET_STAGE" ]]; then
+  # Layout mirrors the target rootfs: usr/local/bin/... + etc/systemd/...
+  cp -aT "$TARGET_STAGE" /mnt
+else
+  info "(staging dir not found — fetching from GitHub)"
+  install -Dm755 <(curl -fsSL "$FIRSTBOOT_URL") /mnt/usr/local/bin/sharkos-firstboot
+  install -Dm644 <(curl -fsSL "$FIRSTBOOT_SVC_URL") /mnt/etc/systemd/system/sharkos-firstboot.service
+fi
+chmod 755 /mnt/usr/local/bin/sharkos-firstboot
+
+# ── Configure the installed system inside the chroot ─────────────────
+# Generate a setup script with the (non-secret) values interpolated. The
+# user password is piped to chpasswd separately so it never lands on disk.
+info "Configuring the installed system..."
+UCODE_INITRD_LINE=""
+[[ -n "$UCODE_IMG" ]] && UCODE_INITRD_LINE="initrd  /$UCODE_IMG"
+
+cat > /mnt/root/sharkos-chroot-setup.sh <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Time, locale, keymap
+ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
+hwclock --systohc
+sed -i 's/^#\($LOCALE\)/\1/' /etc/locale.gen
+locale-gen
+echo "LANG=$LOCALE" > /etc/locale.conf
+cat > /etc/vconsole.conf <<VCEOF
+KEYMAP=$KEYMAP
+FONT=Lat2-Terminus16
+VCEOF
+
+# Hostname
+echo "$HOSTNAME" > /etc/hostname
+cat > /etc/hosts <<HOSTS
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   $HOSTNAME.localdomain $HOSTNAME
+HOSTS
+
+# initramfs: add the encrypt hook (after block, before filesystems) so the
+# root LUKS volume is unlocked during early boot.
+sed -i 's/^HOOKS=.*/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt filesystems fsck)/' /etc/mkinitcpio.conf
+mkinitcpio -P
+
+# User: member of wheel, passwordless-free sudo via wheel rule. Root locked.
+useradd -m -G wheel -s /bin/bash "$USERNAME"
+passwd -l root
+echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/10-wheel
+chmod 440 /etc/sudoers.d/10-wheel
+
+# Bootloader: systemd-boot on the ESP at /boot.
+bootctl install --esp-path=/boot
+
+cat > /boot/loader/loader.conf <<LOADER
+default  sharkos.conf
+timeout  3
+console-mode max
+editor   no
+LOADER
+
+cat > /boot/loader/entries/sharkos.conf <<ENTRY
+title   SharkOS
+linux   /vmlinuz-linux
+$UCODE_INITRD_LINE
+initrd  /initramfs-linux.img
+options cryptdevice=UUID=$LUKS_UUID:$CRYPT_NAME root=/dev/mapper/$CRYPT_NAME rw
+ENTRY
+
+# Services + first-boot desktop stage
+systemctl enable NetworkManager.service
+systemctl enable sharkos-firstboot.service
+
+cat > /etc/motd <<MOTD
+
+SharkOS base system. The SharkOS desktop installs automatically on first
+boot, then reboots into SharkOS. If it does not, finish setup manually with:
+  curl -fsSL https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/install.sh | bash
+
+MOTD
+EOF
+
+chmod 755 /mnt/root/sharkos-chroot-setup.sh
+gum spin --spinner dot --show-error \
+  --title "Configuring system & building initramfs…" -- \
+  arch-chroot /mnt /root/sharkos-chroot-setup.sh
+# Set the user password without writing it into any script.
+printf '%s:%s' "$USERNAME" "$USER_PASS" | arch-chroot /mnt chpasswd
+rm -f /mnt/root/sharkos-chroot-setup.sh
+
+# ── Done ─────────────────────────────────────────────────────────────
+sync
+umount -R /mnt
+cryptsetup close "$CRYPT_NAME"
+
+cat <<NEXT
 
   ════════════════════════════════════════════════════════════
-   Base system installed. The rest is automatic:
+   Base system installed on $DISK (encrypted). The rest is automatic:
      1. Remove the install media and reboot.
-     2. On first boot, the SharkOS desktop installs itself
-        (packages, theming, login manager) — just leave it running.
-     3. It reboots into SharkOS when done. Log in and enjoy. 🦈
+     2. Enter your disk passphrase at boot.
+     3. On first boot, the SharkOS desktop installs itself, then
+        reboots into SharkOS. Log in as '$USERNAME' and enjoy. 🦈
   ════════════════════════════════════════════════════════════
 NEXT
