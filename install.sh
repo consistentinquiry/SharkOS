@@ -79,6 +79,126 @@ else
     # These binds will just be no-ops on non-ASUS hardware (XF86Launch keys won't exist)
 fi
 
+# ── GPU detection & drivers ───────────────────────────────────────────
+# Detect the graphics stack and install the matching drivers. NVIDIA also gets
+# the kernel-cmdline + env tweaks Hyprland needs; AMD/Intel ride on Mesa. In a
+# VM we install guest tooling and (for VirtualBox) force Mesa's software path,
+# since VMSVGA 3D is unreliable under Wayland.
+info "Detecting graphics hardware..."
+
+# Append KEY=VALUE to /etc/environment if that key isn't already set there.
+# Machine-specific, so it lives here rather than in the symlinked repo config.
+add_env() {
+    local kv="$1" key="${1%%=*}"
+    if ! sudo grep -q "^${key}=" /etc/environment 2>/dev/null; then
+        echo "$kv" | sudo tee -a /etc/environment >/dev/null
+        info "  /etc/environment += $kv"
+    fi
+}
+
+# Add a kernel command-line parameter (handles GRUB and systemd-boot).
+add_cmdline_param() {
+    local param="$1"
+    if [[ -f /etc/default/grub ]]; then
+        if ! grep -q -- "$param" /etc/default/grub; then
+            sudo sed -i "s/^GRUB_CMDLINE_LINUX_DEFAULT=\"\(.*\)\"/GRUB_CMDLINE_LINUX_DEFAULT=\"\1 $param\"/" /etc/default/grub
+            sudo grub-mkconfig -o /boot/grub/grub.cfg
+            info "  GRUB cmdline += $param"
+        fi
+    elif [[ -d /boot/loader/entries ]]; then
+        for entry in /boot/loader/entries/*.conf; do
+            grep -q -- "$param" "$entry" || sudo sed -i "/^options/ s/\$/ $param/" "$entry"
+        done
+        info "  systemd-boot cmdline += $param"
+    else
+        err "  Could not patch kernel cmdline for '$param' (unknown bootloader). Add it manually."
+    fi
+}
+
+VIRT="$(systemd-detect-virt 2>/dev/null || true)"
+[[ -n "$VIRT" ]] || VIRT="none"
+
+if [[ "$VIRT" != "none" ]]; then
+    # ---- Virtual machine ----
+    info "Virtualized environment detected: $VIRT"
+    sudo pacman -S --needed --noconfirm mesa
+    case "$VIRT" in
+        oracle)   # VirtualBox
+            info "  Installing VirtualBox guest utilities..."
+            sudo pacman -S --needed --noconfirm virtualbox-guest-utils
+            sudo systemctl enable vboxservice.service 2>/dev/null || true
+            # VirtualBox's VMSVGA 3D path is unreliable under Wayland, so force
+            # Mesa's software renderer (llvmpipe) to guarantee Hyprland a working
+            # GL/EGL context. Remove these two if you enable working 3D accel.
+            add_env "LIBGL_ALWAYS_SOFTWARE=1"
+            add_env "GALLIUM_DRIVER=llvmpipe"
+            ;;
+        vmware)
+            sudo pacman -S --needed --noconfirm open-vm-tools
+            sudo systemctl enable vmtoolsd.service 2>/dev/null || true
+            ;;
+        kvm|qemu)
+            sudo pacman -S --needed --noconfirm qemu-guest-agent spice-vdagent
+            sudo systemctl enable qemu-guest-agent.service 2>/dev/null || true
+            ;;
+        *)
+            info "  No specific guest tooling for '$VIRT'; Mesa installed for software rendering."
+            ;;
+    esac
+    ok "VM graphics configured."
+else
+    # ---- Bare metal: detect by PCI vendor ----
+    command -v lspci &>/dev/null || sudo pacman -S --needed --noconfirm pciutils
+    GPUS="$(lspci -nn | grep -Ei 'vga|3d|display' || true)"
+    echo "$GPUS" | sed 's/^/  /'
+
+    # Match on PCI vendor IDs (NVIDIA 10de, AMD 1002, Intel 8086) rather than
+    # names — substrings like "ati" would otherwise match "CorporATIon".
+    has_nvidia=false; has_amd=false; has_intel=false
+    grep -qiE '\[10de:' <<<"$GPUS" && has_nvidia=true
+    grep -qiE '\[1002:' <<<"$GPUS" && has_amd=true
+    grep -qiE '\[8086:' <<<"$GPUS" && has_intel=true
+
+    # Mesa is the GL/EGL stack for AMD + Intel (and software fallback everywhere).
+    PKGS=(mesa)
+    $has_amd   && { info "  AMD GPU detected";   PKGS+=(vulkan-radeon libva-mesa-driver); }
+    $has_intel && { info "  Intel GPU detected"; PKGS+=(vulkan-intel intel-media-driver); }
+    sudo pacman -S --needed --noconfirm "${PKGS[@]}"
+
+    if $has_nvidia; then
+        info "  NVIDIA GPU detected — installing nvidia-open-dkms stack..."
+        # DKMS needs headers for every installed kernel so the module rebuilds on upgrade.
+        HEADERS=()
+        for k in linux linux-lts linux-zen linux-hardened; do
+            pacman -Qq "$k" &>/dev/null && HEADERS+=("${k}-headers")
+        done
+        sudo pacman -S --needed --noconfirm \
+            nvidia-open-dkms nvidia-utils egl-wayland libva-nvidia-driver dkms "${HEADERS[@]}"
+
+        # Early KMS: load the nvidia modules from the initramfs (rebuilt below; the
+        # Plymouth step rebuilds again, which is harmless).
+        if ! grep -q 'nvidia_drm' /etc/mkinitcpio.conf; then
+            sudo sed -i 's/^MODULES=(\(.*\))/MODULES=(\1 nvidia nvidia_modeset nvidia_uvm nvidia_drm)/' /etc/mkinitcpio.conf
+            info "  Added nvidia modules to mkinitcpio MODULES"
+        fi
+        sudo mkinitcpio -P
+
+        # DRM modesetting (required for Wayland) + framebuffer (clean console/splash).
+        add_cmdline_param "nvidia_drm.modeset=1"
+        add_cmdline_param "nvidia_drm.fbdev=1"
+
+        # Session env so Hyprland / XWayland / VA-API use the NVIDIA stack.
+        add_env "LIBVA_DRIVER_NAME=nvidia"
+        add_env "__GLX_VENDOR_LIBRARY_NAME=nvidia"
+        add_env "NVD_BACKEND=direct"
+        ok "  NVIDIA configured (driver + modeset + env)."
+    fi
+
+    $has_amd || $has_intel || $has_nvidia || \
+        err "  No known GPU vendor matched; installed Mesa only. Check 'lspci | grep -Ei vga'."
+    ok "Bare-metal graphics configured."
+fi
+
 # ── Create directories ────────────────────────────────────────────────
 info "Creating directories..."
 mkdir -p "$HOME/Pictures/Screenshots"
