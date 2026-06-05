@@ -11,6 +11,10 @@ xdg-desktop-portal-hyprland
 wayland
 wayland-protocols
 
+# Graphics baseline (vendor-specific drivers added by install.sh GPU detection)
+mesa
+vulkan-icd-loader
+
 # Status bar & notifications
 waybar
 mako
