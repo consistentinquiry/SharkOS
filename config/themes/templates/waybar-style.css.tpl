@@ -55,6 +55,11 @@ window#waybar {
   padding: 0 8px;
 }
 
+#custom-media {
+  color: {{FG_RGBA}};
+  padding: 0 10px;
+}
+
 #pulseaudio, #network, #battery, #custom-clipboard, #custom-menu {
   padding: 0 10px;
   color: {{FG_RGBA}};

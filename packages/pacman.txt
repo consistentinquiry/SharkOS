@@ -19,6 +19,7 @@ vulkan-icd-loader
 waybar
 mako
 libnotify
+playerctl
 
 # Terminal
 ghostty
