@@ -34,10 +34,13 @@ pavucontrol
 # Brightness
 brightnessctl
 
-# Screenshots & clipboard
+# Screenshots, screen recording & clipboard
 grim
 slurp
 swappy
+hyprpicker
+wf-recorder
+jq
 wl-clipboard
 cliphist
 

@@ -1,14 +1,12 @@
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib-menu.sh"
 
-menu() {
-  local prompt="$1"
-  local options="$2"
-  echo -e "$options" | walker --dmenu --width 300 --minheight 1 --maxheight 300 -p "$prompt" 2>/dev/null
-}
-
-case $(menu "Menu" "󰀻  Apps\n󰸌  Themes\n󰒓  Controls") in
-  *Apps*)      walker ;;
-  *Themes*)    "$SCRIPT_DIR/theme-switcher.sh" ;;
-  *Controls*)  "$SCRIPT_DIR/control-centre.sh" ;;
+case $(menu "Menu" "󰀻  Apps\n󰸌  Themes\n󰄄  Capture\n󰕧  Screenrecord\n󰒓  Controls\n󰐥  Power") in
+  *Apps*)         walker ;;
+  *Themes*)       "$SCRIPT_DIR/theme-switcher.sh" ;;
+  *Capture*)      "$SCRIPT_DIR/capture-menu.sh" ;;
+  *Screenrecord*) "$SCRIPT_DIR/screenrecord.sh" ;;
+  *Controls*)     "$SCRIPT_DIR/control-centre.sh" ;;
+  *Power*)        "$SCRIPT_DIR/power-menu.sh" ;;
 esac

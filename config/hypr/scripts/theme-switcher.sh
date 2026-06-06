@@ -1,4 +1,7 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/lib-menu.sh"
+
 THEMES_DIR="$HOME/.config/themes"
 current=$(cat "$THEMES_DIR/.current" 2>/dev/null || echo "noir")
 
@@ -28,7 +31,7 @@ if [[ ${#lines[@]} -eq 0 ]]; then
 fi
 
 # Emit one clean line per theme (sorted, no stray blank lines) to walker's dmenu.
-selected=$(printf '%s\n' "${lines[@]}" | sort | walker --dmenu --width 300 --minheight 1 --maxheight 300 -p "Theme" 2>/dev/null)
+selected=$(printf '%s\n' "${lines[@]}" | sort | walker --dmenu --width 320 --minheight 1 --maxheight "$(menu_maxheight)" -p "Theme" 2>/dev/null)
 
 # Strip leading whitespace and the current marker, leaving the label
 selected=$(echo "$selected" | sed 's/^[[:space:]]*//; s/[[:space:]]*← current$//; s/[[:space:]]*$//')

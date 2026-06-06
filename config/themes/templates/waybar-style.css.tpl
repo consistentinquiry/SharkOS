@@ -55,14 +55,14 @@ window#waybar {
   padding: 0 8px;
 }
 
-#pulseaudio, #network, #battery, #custom-control-center {
+#pulseaudio, #network, #battery, #custom-clipboard, #custom-menu {
   padding: 0 10px;
   color: {{FG_RGBA}};
   margin: 4px 1px;
   border-radius: {{RADIUS_BTN}};
 }
 
-#pulseaudio:hover, #network:hover, #battery:hover, #custom-control-center:hover {
+#pulseaudio:hover, #network:hover, #battery:hover, #custom-clipboard:hover, #custom-menu:hover {
   color: {{FG_RGBA}};
   background: {{OVERLAY_SOFT}};
 }
