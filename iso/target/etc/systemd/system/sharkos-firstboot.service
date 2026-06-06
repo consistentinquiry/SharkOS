@@ -1,6 +1,6 @@
 [Unit]
 Description=SharkOS first-boot desktop install
-After=network-online.target NetworkManager.service systemd-user-sessions.service
+After=network-online.target iwd.service systemd-resolved.service systemd-user-sessions.service
 Wants=network-online.target
 ConditionPathExists=!/var/lib/sharkos/.firstboot-done
 

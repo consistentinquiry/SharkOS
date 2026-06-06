@@ -23,11 +23,8 @@ libnotify
 # Terminal
 ghostty
 
-# Control center (Python/GTK layer-shell popup + waybar module)
+# Control center helpers (rfkill/JSON parsing, wallpaper picker)
 python
-python-gobject
-gtk3
-gtk-layer-shell
 
 # Audio (PipeWire stack)
 pipewire-alsa
@@ -57,10 +54,9 @@ noto-fonts-emoji
 ttf-dejavu
 
 # System
-networkmanager
-network-manager-applet
+iwd
 impala
-blueman
+bluetui
 power-profiles-daemon
 
 # Greeter

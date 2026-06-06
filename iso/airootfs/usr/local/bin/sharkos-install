@@ -36,7 +36,7 @@ FIRSTBOOT_SVC_URL="https://raw.githubusercontent.com/consistentinquiry/SharkOS/m
 BASE_PKGS=(
   base linux linux-firmware
   cryptsetup            # required by the initramfs `encrypt` hook
-  networkmanager        # first boot needs the network
+  iwd                   # wifi backend (first boot needs the network); impala drives it
   sudo vim git base-devel curl
 )
 
@@ -234,34 +234,20 @@ info "Base system installed."
 info "Generating fstab..."
 genfstab -U /mnt >> /mnt/etc/fstab
 
-# Carry the live Wi-Fi connection into the installed system. The live env
-# uses iwd; the target uses NetworkManager — so write an NM keyfile directly.
-# NetworkManager auto-connects from it on first boot (wired needs nothing).
+# Carry the live Wi-Fi connection into the installed system. Both the live env
+# and the target use iwd, so we just drop an iwd PSK profile; iwd auto-connects
+# from it on first boot (wired needs nothing). iwd hex-encodes SSIDs with
+# non-alphanumeric characters as `=xx` in the filename — we handle the common
+# plain-SSID case here, which is what the live `connect_wifi` flow accepts.
 if [[ -n "${WIFI_SSID:-}" ]]; then
   info "Saving Wi-Fi connection for the installed system..."
-  install -dm700 /mnt/etc/NetworkManager/system-connections
-  NMCON="/mnt/etc/NetworkManager/system-connections/${WIFI_SSID}.nmconnection"
-  cat > "$NMCON" <<NMEOF
-[connection]
-id=${WIFI_SSID}
-type=wifi
-autoconnect=true
-
-[wifi]
-mode=infrastructure
-ssid=${WIFI_SSID}
-
-[wifi-security]
-key-mgmt=wpa-psk
-psk=${WIFI_PSK}
-
-[ipv4]
-method=auto
-
-[ipv6]
-method=auto
-NMEOF
-  chmod 600 "$NMCON"   # NetworkManager refuses world-readable keyfiles
+  install -dm700 /mnt/var/lib/iwd
+  PSKFILE="/mnt/var/lib/iwd/${WIFI_SSID}.psk"
+  cat > "$PSKFILE" <<PSKEOF
+[Security]
+Passphrase=${WIFI_PSK}
+PSKEOF
+  chmod 600 "$PSKFILE"   # holds the passphrase in cleartext
 fi
 
 # LUKS partition UUID for the kernel command line (the raw partition, not
@@ -344,8 +330,19 @@ initrd  /initramfs-linux.img
 options rd.luks.name=$LUKS_UUID=$CRYPT_NAME root=/dev/mapper/$CRYPT_NAME rw
 ENTRY
 
+# Networking: iwd handles wifi + DHCP itself; systemd-resolved handles DNS.
+install -dm755 /etc/iwd
+cat > /etc/iwd/main.conf <<IWDEOF
+[General]
+EnableNetworkConfiguration=true
+
+[Network]
+NameResolvingService=systemd
+IWDEOF
+ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+
 # Services + first-boot desktop stage
-systemctl enable NetworkManager.service
+systemctl enable iwd.service systemd-resolved.service
 systemctl enable sharkos-firstboot.service
 
 cat > /etc/motd <<MOTD

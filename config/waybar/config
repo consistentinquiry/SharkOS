@@ -36,7 +36,7 @@
     "format-ethernet": "󰈀",
     "format-disconnected": "󰤭",
     "tooltip-format-wifi": "{essid}  {signalStrength}%  {ipaddr}",
-    "on-click": "ghostty -e impala"
+    "on-click": "rfkill unblock wifi; ghostty --class=com.sharkos.impala -e impala"
   },
 
   "battery": {
@@ -51,5 +51,11 @@
     "format-full": "󰁹  {capacity}%",
     "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
     "tooltip-format": "{timeTo}, {power:.1f}W"
-}
+  },
+
+  "custom/control-center": {
+    "format": "󰒓",
+    "tooltip": false,
+    "on-click": "~/.config/hypr/scripts/control-centre.sh"
+  }
 }

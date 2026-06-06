@@ -41,28 +41,6 @@ action = "$SCRIPT wireguard $iface connect"
 EOF
     fi
   done
-  # nmcli wireguard connections
-  while IFS=: read -r name type; do
-    [[ "$type" == "wireguard" ]] || continue
-    if nmcli -t -f NAME connection show --active 2>/dev/null | grep -qx "$name"; then
-      cat >> "$MENU_FILE" << EOF
-[[entries]]
-text = "WireGuard ($name)  ← connected"
-icon = "$ICONS_DIR/wireguard.svg"
-action = "$SCRIPT wireguard '$name' disconnect"
-state = "current"
-
-EOF
-    else
-      cat >> "$MENU_FILE" << EOF
-[[entries]]
-text = "WireGuard ($name)"
-icon = "$ICONS_DIR/wireguard.svg"
-action = "$SCRIPT wireguard '$name' connect"
-
-EOF
-    fi
-  done < <(nmcli -t -f NAME,TYPE connection show 2>/dev/null | grep "wireguard")
 fi
 
 # Netbird
@@ -86,32 +64,6 @@ action = "$SCRIPT netbird default connect"
 
 EOF
   fi
-fi
-
-# OpenVPN via NetworkManager
-if command -v openvpn &>/dev/null; then
-  active_cons=$(nmcli -t -f NAME connection show --active 2>/dev/null)
-  while IFS=: read -r name type; do
-    [[ "$type" == "vpn" ]] || continue
-    if echo "$active_cons" | grep -qx "$name"; then
-      cat >> "$MENU_FILE" << EOF
-[[entries]]
-text = "OpenVPN ($name)  ← connected"
-icon = "$ICONS_DIR/openvpn.svg"
-action = "$SCRIPT openvpn '$name' disconnect"
-state = "current"
-
-EOF
-    else
-      cat >> "$MENU_FILE" << EOF
-[[entries]]
-text = "OpenVPN ($name)"
-icon = "$ICONS_DIR/openvpn.svg"
-action = "$SCRIPT openvpn '$name' connect"
-
-EOF
-    fi
-  done < <(nmcli -t -f NAME,TYPE connection show 2>/dev/null | grep ":vpn$")
 fi
 
 # NordVPN

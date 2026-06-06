@@ -43,7 +43,7 @@ for _ in $(seq 1 30); do
   sleep 2
 done
 if [ "$connected" -ne 1 ]; then
-  echo "  !! No network after ~60s. Connect (e.g. nmtui) and reboot to retry." >&2
+  echo "  !! No network after ~60s. Connect (e.g. iwctl) and reboot to retry." >&2
   exit 1
 fi
 
