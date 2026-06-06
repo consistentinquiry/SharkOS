@@ -56,7 +56,7 @@
   "custom/clipboard": {
     "format": "󰅌",
     "tooltip": false,
-    "on-click": "sh -c 'cliphist list | walker --dmenu | cliphist decode | wl-copy'"
+    "on-click": "~/.config/hypr/scripts/clipboard-menu.sh"
   },
 
   "custom/menu": {

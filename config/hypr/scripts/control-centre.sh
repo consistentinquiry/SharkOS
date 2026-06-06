@@ -66,37 +66,6 @@ launch_tui() {
   setsid -f ghostty --class="com.sharkos.$cls" -e "$@" >/dev/null 2>&1
 }
 
-# ── Power profile (power-profiles-daemon) ──────────────────
-
-show_power_profile_menu() {
-  local current; current=$(powerprofilesctl get 2>/dev/null)
-  declare -A id_by_label
-  local opts="" id icon label line
-  while read -r id; do
-    [[ -z "$id" ]] && continue
-    case "$id" in
-      performance) icon="󰓅"; label="Performance" ;;
-      balanced)    icon="󰾅"; label="Balanced" ;;
-      power-saver) icon="󰾆"; label="Power Saver" ;;
-      *)           icon="󰓅"; label="$id" ;;
-    esac
-    line="$icon  $label"
-    [[ "$id" == "$current" ]] && line+="  ← active"
-    id_by_label["$line"]="$id"
-    opts+="$line\n"
-  done < <(powerprofilesctl list 2>/dev/null | sed -nE 's/^[ *]*([a-z-]+):$/\1/p')
-  opts+="󰁍  Back"
-
-  local sel; sel=$(menu "Power Profile" "$opts")
-  case "$sel" in
-    ""|*Back*) show_controls ;;
-    *)
-      local id="${id_by_label[$sel]}"
-      [[ -n "$id" ]] && { powerprofilesctl set "$id" 2>/dev/null; notify-send -t 2000 "Power Profile" "${sel#*  }"; }
-      show_controls ;;
-  esac
-}
-
 # ── Audio output (PipeWire via pactl) ──────────────────────
 
 show_audio_menu() {
@@ -152,24 +121,18 @@ show_controls() {
 
   local hotspot_label="󱜠  Hotspot"
 
-  local pp_current; pp_current=$(powerprofilesctl get 2>/dev/null)
-  local pp_label="󰓅  Power Profile"
-  [[ -n "$pp_current" ]] && pp_label+="  [${pp_current}]"
-  pp_label+="  >"
-
   local audio_label="󰓃  Audio Output  >"
 
   local selected
-  selected=$(menu "Controls" "$airplane_label\n$wifi_label\n$bt_label\n$hotspot_label\n$pp_label\n$audio_label\n󰑓  Reload UI")
+  selected=$(menu "Controls" "$airplane_label\n$wifi_label\n$bt_label\n$hotspot_label\n$audio_label\n󰑓  Reload UI")
 
   case "$selected" in
-    *Airplane*)        toggle_airplane; show_controls ;;
-    *WiFi*)            rfkill unblock wifi 2>/dev/null; launch_tui impala impala ;;
-    *Bluetooth*)       rfkill unblock bluetooth 2>/dev/null; launch_tui bluetui bluetui ;;
-    *Hotspot*)         rfkill unblock wifi 2>/dev/null; launch_tui hotspot impala --mode ap ;;
-    *"Power Profile"*) show_power_profile_menu ;;
-    *"Audio Output"*)  show_audio_menu ;;
-    *"Reload UI"*)     "$SCRIPT_DIR/reload-ui.sh" ;;
+    *Airplane*)       toggle_airplane; show_controls ;;
+    *WiFi*)           rfkill unblock wifi 2>/dev/null; launch_tui impala impala ;;
+    *Bluetooth*)      rfkill unblock bluetooth 2>/dev/null; launch_tui bluetui bluetui ;;
+    *Hotspot*)        rfkill unblock wifi 2>/dev/null; launch_tui hotspot impala --mode ap ;;
+    *"Audio Output"*) show_audio_menu ;;
+    *"Reload UI"*)    "$SCRIPT_DIR/reload-ui.sh" ;;
   esac
 }
 

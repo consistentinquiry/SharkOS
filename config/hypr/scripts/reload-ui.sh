@@ -16,9 +16,9 @@ hyprctl reload
 # Notifications
 makoctl reload 2>/dev/null
 
-# Waybar
+# Waybar (via the launcher that adapts modules to the hardware)
 pkill -x waybar
-setsid waybar >/dev/null 2>&1 &
+setsid "$HOME/.config/hypr/scripts/launch-waybar.sh" >/dev/null 2>&1 &
 
 # Walker data provider + service
 pkill -x elephant
