@@ -48,27 +48,6 @@ get_bluetooth() {
   fi
 }
 
-get_any_vpn_active() {
-  # Returns "on" if any VPN is connected, "off" otherwise
-  # Check WireGuard
-  if command -v wg &>/dev/null && [[ -n $(wg show 2>/dev/null) ]]; then
-    echo "on"; return
-  fi
-  # Check Netbird
-  if command -v netbird &>/dev/null && netbird status 2>/dev/null | grep -q "Connected"; then
-    echo "on"; return
-  fi
-  # Check NordVPN
-  if command -v nordvpn &>/dev/null; then
-    local out
-    out=$(nordvpn status 2>/dev/null)
-    if echo "$out" | grep -q "Connected" && ! echo "$out" | grep -q "Disconnected"; then
-      echo "on"; return
-    fi
-  fi
-  echo "off"
-}
-
 # ── Toggle actions ─────────────────────────────────────────
 
 toggle_airplane() {
@@ -92,13 +71,6 @@ launch_tui() {
   setsid -f ghostty --class="com.sharkos.$cls" -e "$@" >/dev/null 2>&1
 }
 
-# ── VPN sub-menu (Elephant menu with brand SVG icons) ──────
-
-show_vpn_menu() {
-  walker -m menus:vpn 2>/dev/null
-  show_controls
-}
-
 # ── Main controls menu ─────────────────────────────────────
 
 show_controls() {
@@ -106,7 +78,6 @@ show_controls() {
   local airplane_state=$(get_airplane)
   local wifi_state=$(get_wifi)
   local bt_state=$(get_bluetooth)
-  local vpn_state=$(get_any_vpn_active)
 
   # Format labels with status
   local airplane_label="󰀝  Airplane Mode"
@@ -119,20 +90,15 @@ show_controls() {
   local bt_label="󰂯  Bluetooth"
   [[ "$bt_state" == "on" ]] && bt_label+="  [ON]" || bt_label+="  [OFF]"
 
-  local vpn_label="󰌆  VPN"
-  [[ "$vpn_state" == "on" ]] && vpn_label+="  [ON]" || vpn_label+="  [OFF]"
-  vpn_label+="  >"
-
   local hotspot_label="󱜠  Hotspot"
 
   local selected
-  selected=$(menu "Controls" "$airplane_label\n$wifi_label\n$bt_label\n$vpn_label\n$hotspot_label\n󰑓  Reload UI")
+  selected=$(menu "Controls" "$airplane_label\n$wifi_label\n$bt_label\n$hotspot_label\n󰑓  Reload UI")
 
   case "$selected" in
     *Airplane*)   toggle_airplane; show_controls ;;
     *WiFi*)       rfkill unblock wifi 2>/dev/null; launch_tui impala impala ;;
     *Bluetooth*)  rfkill unblock bluetooth 2>/dev/null; launch_tui bluetui bluetui ;;
-    *VPN*)        show_vpn_menu ;;
     *Hotspot*)    rfkill unblock wifi 2>/dev/null; launch_tui hotspot impala --mode ap ;;
     *"Reload UI"*) "$SCRIPT_DIR/reload-ui.sh" ;;
   esac
