@@ -83,18 +83,45 @@
   padding: 0;
 }
 .notification-row .notification-background .notification {
-  background: {{OVERLAY_SOFT}};
+  /* A solid card surface: the frosted blur shows through the panel itself,
+     but each card is opaque so a stack doesn't show through into the cards
+     behind it. */
+  background: {{WINDOW_BG_SOLID}};
   border: none;
   box-shadow: none;
   border-radius: {{RADIUS_MD}};
   margin: 0;
-  padding: 8px;
-}
-.notification-row .notification-background .notification:hover {
-  background: {{OVERLAY_HOVER}};
+  padding: 0;
 }
 .notification-row .notification-background .notification.critical {
   border: 1px solid {{CRIT}};
+}
+
+/* The clickable card body. Padding + radius live here so the hover
+   illumination fills exactly the card, not the wider row. */
+.notification-row .notification-background .notification .notification-default-action {
+  margin: 0;
+  padding: 10px;
+  border-radius: {{RADIUS_MD}};
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+}
+.notification-row .notification-background .notification .notification-default-action:hover {
+  background: {{OVERLAY_HOVER}};
+}
+
+/* Suppress SwayNC's full-row focus/hover highlight and the GTK focus ring —
+   the highlight was wider than the card and bled toward the next notification.
+   The only highlight is now the hover fill above, sized to the card. */
+.notification-row,
+.notification-row:focus,
+.notification-row:hover,
+.notification-row .notification-background .notification:focus,
+.notification-row .notification-background .notification .notification-default-action:focus {
+  background: transparent;
+  outline: none;
+  box-shadow: none;
 }
 
 /* Text */
