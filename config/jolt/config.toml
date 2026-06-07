@@ -1,0 +1,9 @@
+# sharkOS jolt config.
+#
+# "sharkos" is a custom theme generated per system theme by apply-theme.sh
+# (rendered to ~/.config/jolt/themes/sharkos.toml). appearance is pinned to
+# "dark" so jolt always uses that palette — the [dark] section holds the active
+# sharkOS colours whether the theme itself is light or dark, so it always
+# matches. Press T in jolt to preview other built-in themes.
+theme = "sharkos"
+appearance = "dark"

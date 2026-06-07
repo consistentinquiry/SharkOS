@@ -247,7 +247,7 @@ ensure_dirs() {
 # ── Symlink config directories (idempotent) ─────────────────────────────
 symlink_configs() {
     info "Symlinking config files..."
-    local CONFIG_DIRS=(hypr waybar walker swayosd swaync ghostty swappy elephant themes)
+    local CONFIG_DIRS=(hypr waybar walker swayosd swaync ghostty swappy elephant themes jolt)
     local dir src dest
     for dir in "${CONFIG_DIRS[@]}"; do
         src="$SHARKOS_DIR/config/$dir"

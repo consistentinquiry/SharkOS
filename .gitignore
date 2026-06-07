@@ -24,6 +24,7 @@ config/waybar/style.css
 config/ghostty/config
 config/swaync/style.css
 config/swayosd/style.css
+config/jolt/themes/sharkos.toml
 config/walker/themes/noir/style.css
 config/hypr/colors.conf
 config/hypr/hyprlock.conf

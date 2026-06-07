@@ -45,6 +45,9 @@ apply_template "$THEMES_DIR/templates/waybar-style.css.tpl" \
 apply_template "$THEMES_DIR/templates/swaync.css.tpl" \
   "$HOME/.config/swaync/style.css"
 
+apply_template "$THEMES_DIR/templates/jolt.toml.tpl" \
+  "$HOME/.config/jolt/themes/sharkos.toml"
+
 apply_template "$THEMES_DIR/templates/ghostty.conf.tpl" \
   "$HOME/.config/ghostty/config"
 
