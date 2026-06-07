@@ -43,6 +43,10 @@ get_bluetooth() {
   fi
 }
 
+get_glass() {
+  cat "$HOME/.local/state/sharkos/glass" 2>/dev/null || echo on
+}
+
 # ── Toggle actions ─────────────────────────────────────────
 
 toggle_airplane() {
@@ -123,8 +127,12 @@ show_controls() {
 
   local audio_label="󰓃  Audio Output  >"
 
+  local glass_state=$(get_glass)
+  local glass_label="󰂕  UI Glass"
+  [[ "$glass_state" == "on" ]] && glass_label+="  [ON]" || glass_label+="  [OFF]"
+
   local selected
-  selected=$(menu "Controls" "$airplane_label\n$wifi_label\n$bt_label\n$hotspot_label\n$audio_label\n󰑓  Reload UI")
+  selected=$(menu "Controls" "$airplane_label\n$wifi_label\n$bt_label\n$hotspot_label\n$audio_label\n$glass_label\n󰑓  Reload UI")
 
   case "$selected" in
     *Airplane*)       toggle_airplane; show_controls ;;
@@ -132,6 +140,7 @@ show_controls() {
     *Bluetooth*)      rfkill unblock bluetooth 2>/dev/null; launch_tui bluetui bluetui ;;
     *Hotspot*)        rfkill unblock wifi 2>/dev/null; launch_tui hotspot impala --mode ap ;;
     *"Audio Output"*) show_audio_menu ;;
+    *"UI Glass"*)     "$SCRIPT_DIR/glass-toggle.sh" ;;
     *"Reload UI"*)    "$SCRIPT_DIR/reload-ui.sh" ;;
   esac
 }
