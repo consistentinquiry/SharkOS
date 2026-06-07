@@ -125,16 +125,20 @@ window#waybar {
   100% { color: {{SUCCESS}}; }
 }
 
+/* Battery warning/critical are deliberately NOT theme-derived: a low-battery
+   signal should read as yellow/red on every theme (monochrome themes like
+   hackerman would otherwise tint them green). These literal colours are the
+   only place we override the palette. */
 @keyframes warning-pulse {
-  0%   { color: {{WARN}}; }
-  50%  { color: {{WARN_BRIGHT}}; }
-  100% { color: {{WARN}}; }
+  0%   { color: rgba(255, 190, 60, 0.9); }
+  50%  { color: rgba(255, 215, 110, 1); }
+  100% { color: rgba(255, 190, 60, 0.9); }
 }
 
 @keyframes critical-pulse {
-  0%   { color: {{CRIT}}; }
-  50%  { color: {{CRIT_BRIGHT}}; }
-  100% { color: {{CRIT}}; }
+  0%   { color: rgba(235, 77, 75, 0.9); }
+  50%  { color: rgba(255, 110, 108, 1); }
+  100% { color: rgba(235, 77, 75, 0.9); }
 }
 
 #battery.charging {
