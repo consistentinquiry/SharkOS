@@ -13,6 +13,10 @@
 
 REPO="${SHARKOS_DIR:-$HOME/Git/sharkOS}"
 STATE="${SHARKOS_STATE:-$HOME/.local/state/sharkos}/version"
+# Remembers the version we last sent a desktop notification for, so the check
+# (run every interval and on every manual poll) notifies once per new release
+# instead of re-spamming. Cleared again once the machine is up to date.
+NOTIFIED="${SHARKOS_STATE:-$HOME/.local/state/sharkos}/notified"
 
 running=""
 [ -f "$STATE" ] && running="$(tr -d '[:space:]' < "$STATE")"
@@ -30,8 +34,24 @@ fi
 [ -n "$latest" ] || latest="$running"
 
 if [ "$running" != "$latest" ]; then
+    # Fire a one-shot desktop notification for this new version. Only when we
+    # haven't already notified for this exact "latest", so neither the 30-minute
+    # interval nor a manual poll re-spams it. Best-effort: needs a notif daemon.
+    seen=""
+    [ -f "$NOTIFIED" ] && seen="$(tr -d '[:space:]' < "$NOTIFIED")"
+    if [ "$seen" != "$latest" ] && command -v notify-send >/dev/null 2>&1; then
+        notify-send -a sharkOS -i system-software-update -u normal \
+            "sharkOS update available" \
+            "$(printf '%s → %s\nOpen the menu or run sharkos-update.' "$running" "$latest")" \
+            2>/dev/null
+        mkdir -p "$(dirname "$NOTIFIED")" 2>/dev/null
+        printf '%s\n' "$latest" > "$NOTIFIED"
+    fi
+
     printf '{"text":"󰚰","tooltip":"sharkOS update available\\n%s → %s\\nClick to update","class":"update-available"}\n' \
         "$running" "$latest"
 else
+    # Up to date: drop the marker so the next new version notifies afresh.
+    rm -f "$NOTIFIED" 2>/dev/null
     printf '{"text":"","tooltip":"","class":"up-to-date"}\n'
 fi

@@ -1,9 +1,0 @@
-font=JetBrainsMono Nerd Font 10
-background-color={{MAKO_BG}}
-text-color={{MAKO_TEXT}}
-border-color={{MAKO_BORDER}}
-border-size=2
-border-radius={{MAKO_RADIUS}}
-padding=10
-default-timeout=3000
-anchor=top-right
