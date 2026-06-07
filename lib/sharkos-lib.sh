@@ -436,29 +436,45 @@ configure_greetd() {
     ok "greetd configured for Plymouth handoff."
 }
 
-# ── OS branding: os-release VERSION_ID (idempotent) ─────────────────────
-# Arch leaves VERSION_ID unset (it's rolling), so tools that surface it — e.g.
-# the jolt battery monitor's header — show "Unknown". /etc/os-release is just a
-# symlink to the filesystem-package-owned /usr/lib/os-release and is itself
-# unowned by pacman, so we shadow it with a regular file carrying SharkOS
-# branding. Reversible: `sudo ln -sf ../usr/lib/os-release /etc/os-release`.
+# ── OS branding: os-release as SharkOS (idempotent) ─────────────────────
+# /etc/os-release is the canonical OS identity that fastfetch/neofetch, systemd,
+# login, desktop "About" panels and jolt all read. On Arch it's a symlink to the
+# filesystem-package-owned /usr/lib/os-release; the symlink itself is unowned by
+# pacman, so we shadow it with a regular file carrying SharkOS branding. We keep
+# ID=arch (and BUILD_ID, support URLs) so yay/AUR/pacman tooling that keys off
+# the distro id keeps working — only the user-facing name/version are rebranded.
+# Reversible: `sudo ln -sf ../usr/lib/os-release /etc/os-release`.
 brand_os_release() {
-    info "Branding os-release (VERSION_ID=SharkOS)..."
+    local ver; ver="$(tr -d '[:space:]' < "$SHARKOS_DIR/VERSION" 2>/dev/null)"
+    [[ -n "$ver" ]] || ver="rolling"
+    info "Branding os-release as SharkOS $ver..."
+
+    # Idempotent: skip if already branded to this exact version.
     if [[ -f /etc/os-release && ! -L /etc/os-release ]] && \
-       grep -q '^VERSION_ID="SharkOS"' /etc/os-release; then
-        ok "os-release already branded."
+       grep -q '^NAME="SharkOS"' /etc/os-release && \
+       grep -q "^VERSION_ID=\"$ver\"\$" /etc/os-release; then
+        ok "os-release already branded (SharkOS $ver)."
         return 0
     fi
+
     local tmp; tmp="$(mktemp)"
-    # Start from canonical Arch os-release, drop any VERSION/VERSION_ID, append ours.
-    grep -vE '^(VERSION|VERSION_ID)=' /usr/lib/os-release > "$tmp"
-    printf 'VERSION="SharkOS"\nVERSION_ID="SharkOS"\n' >> "$tmp"
+    # Inherit Arch's os-release, then override the branding-relevant fields.
+    grep -vE '^(NAME|PRETTY_NAME|VERSION|VERSION_ID|ANSI_COLOR|HOME_URL)=' \
+        /usr/lib/os-release > "$tmp"
+    {
+        echo 'NAME="SharkOS"'
+        echo "PRETTY_NAME=\"SharkOS $ver\""
+        echo "VERSION=\"$ver\""
+        echo "VERSION_ID=\"$ver\""
+        echo 'ANSI_COLOR="38;2;130;251;156"'   # SharkOS signature green
+        echo 'HOME_URL="https://github.com/consistentinquiry/SharkOS"'
+    } >> "$tmp"
     # --remove-destination replaces the symlink with a real file rather than
     # following it and clobbering the package-owned /usr/lib/os-release.
     sudo cp --remove-destination "$tmp" /etc/os-release
     sudo chmod 644 /etc/os-release
     rm -f "$tmp"
-    ok "os-release branded — jolt now shows 'Arch Linux SharkOS'."
+    ok "os-release branded — SharkOS $ver everywhere (fastfetch, login, jolt, …)."
 }
 
 # ── PipeWire user services ──────────────────────────────────────────────
