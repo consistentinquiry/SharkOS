@@ -57,6 +57,25 @@ preflight() {
 # gitignored so they never block a pull — only real tracked edits do. We
 # refuse to pull over them (rather than silently auto-committing) unless the
 # caller passed "stash".
+# ── Remote URLs: pull keyless over HTTPS, push over SSH ─────────────────
+# The repo is public, so updates can fetch anonymously over HTTPS — no SSH key
+# or passphrase needed (the whole point of sharkos-update on other machines).
+# Dev boxes set origin to SSH so they can push; preserve that by keeping the SSH
+# push URL while switching the fetch URL to HTTPS. Idempotent: once origin's
+# fetch URL is HTTPS this is a no-op. Reverse with `git remote set-url origin
+# git@github.com:consistentinquiry/SharkOS.git`.
+ensure_remote_urls() {
+    local cur
+    cur="$(git -C "$SHARKOS_DIR" remote get-url origin 2>/dev/null)" || return 0
+    case "$cur" in
+        git@github.com:*|ssh://git@github.com/*)
+            git -C "$SHARKOS_DIR" remote set-url --push origin "$cur"
+            git -C "$SHARKOS_DIR" remote set-url origin "$SHARKOS_REPO"
+            info "origin: fetch via HTTPS (keyless updates), push via SSH."
+            ;;
+    esac
+}
+
 sync_repo() {
     local allow_stash="${1:-}" stashed=0
     cd "$SHARKOS_DIR"

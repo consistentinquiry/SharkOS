@@ -51,7 +51,6 @@ BAR_WIDTH=28
 STEP=0
 TOTAL=0
 SUDO_KEEPALIVE=""
-SHARKOS_SSH_AGENT=""
 
 # Read a secret from the terminal with a styled one-line prompt. The secret is
 # printed on stdout; all chrome goes to stderr so $(ask_secret …) captures only
@@ -87,33 +86,6 @@ request_sudo() {
     die "Could not authenticate with sudo."
 }
 
-# If the repo uses an SSH remote and no key is loaded in an agent, unlock it now
-# with a styled prompt (via an SSH_ASKPASS helper) so the pull doesn't stop to
-# ask. Best-effort: if it doesn't load, the foreground pull falls back to ssh's
-# own prompt, which is safe.
-ensure_ssh_key() {
-    case "$(git -C "$SHARKOS_DIR" remote get-url origin 2>/dev/null)" in
-        git@*|ssh://*) ;;
-        *) return 0 ;;
-    esac
-    ssh-add -l >/dev/null 2>&1 && return 0          # already unlocked
-    if [[ -z "${SSH_AUTH_SOCK:-}" ]]; then          # no agent — start one
-        eval "$(ssh-agent -s)" >/dev/null 2>&1 || return 0
-        SHARKOS_SSH_AGENT="${SSH_AGENT_PID:-}"
-    fi
-    local askpass; askpass="$(mktemp)"
-    cat >"$askpass" <<'EOS'
-#!/bin/bash
-printf '\n  \033[1;32m▸\033[0m %s ' "$1" >/dev/tty
-read -rs p </dev/tty; printf '\n' >/dev/tty
-printf '%s' "$p"
-EOS
-    chmod +x "$askpass"
-    SSH_ASKPASS="$askpass" SSH_ASKPASS_REQUIRE=force DISPLAY="${DISPLAY:-:0}" \
-        ssh-add </dev/null >/dev/null 2>&1 || true
-    rm -f "$askpass"
-}
-
 # Render the single-line progress bar. $1 = leading glyph, $2 = label.
 draw_bar() {
     local glyph="$1" label="$2" filled k bar=""
@@ -130,8 +102,7 @@ draw_bar() {
 # Stop the keep-alive / ssh-agent we started.
 _cleanup() {
     [[ -n "$SUDO_KEEPALIVE" ]] && kill "$SUDO_KEEPALIVE" 2>/dev/null
-    [[ -n "$SHARKOS_SSH_AGENT" ]] && kill "$SHARKOS_SSH_AGENT" 2>/dev/null
-    SUDO_KEEPALIVE=""; SHARKOS_SSH_AGENT=""
+    SUDO_KEEPALIVE=""
 }
 
 update_failed() {
@@ -170,7 +141,7 @@ run_step() {
 # ── Run ─────────────────────────────────────────────────────────────────
 print_banner
 preflight
-ensure_ssh_key
+ensure_remote_urls          # pull over HTTPS (keyless); push stays on SSH
 sync_repo "$STASH"          # foreground: dirty-tree guidance + pull stay visible
 request_sudo
 

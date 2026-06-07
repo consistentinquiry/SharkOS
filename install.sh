@@ -33,6 +33,7 @@ cd "$SHARKOS_DIR"
 # ── Run the shared steps ───────────────────────────────────────────────
 source "$SHARKOS_DIR/lib/sharkos-lib.sh"
 
+ensure_remote_urls
 system_upgrade
 ensure_yay
 install_packages
