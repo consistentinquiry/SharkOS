@@ -52,6 +52,7 @@ apply_active_theme preserve      # keep this machine's chosen theme
 install_plymouth
 configure_bootloader_splash
 configure_greetd
+brand_os_release
 enable_pipewire
 link_self
 detect_asus                      # heavy AUR build, non-fatal — runs last so a

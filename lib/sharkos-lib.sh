@@ -436,6 +436,31 @@ configure_greetd() {
     ok "greetd configured for Plymouth handoff."
 }
 
+# ── OS branding: os-release VERSION_ID (idempotent) ─────────────────────
+# Arch leaves VERSION_ID unset (it's rolling), so tools that surface it — e.g.
+# the jolt battery monitor's header — show "Unknown". /etc/os-release is just a
+# symlink to the filesystem-package-owned /usr/lib/os-release and is itself
+# unowned by pacman, so we shadow it with a regular file carrying SharkOS
+# branding. Reversible: `sudo ln -sf ../usr/lib/os-release /etc/os-release`.
+brand_os_release() {
+    info "Branding os-release (VERSION_ID=SharkOS)..."
+    if [[ -f /etc/os-release && ! -L /etc/os-release ]] && \
+       grep -q '^VERSION_ID="SharkOS"' /etc/os-release; then
+        ok "os-release already branded."
+        return 0
+    fi
+    local tmp; tmp="$(mktemp)"
+    # Start from canonical Arch os-release, drop any VERSION/VERSION_ID, append ours.
+    grep -vE '^(VERSION|VERSION_ID)=' /usr/lib/os-release > "$tmp"
+    printf 'VERSION="SharkOS"\nVERSION_ID="SharkOS"\n' >> "$tmp"
+    # --remove-destination replaces the symlink with a real file rather than
+    # following it and clobbering the package-owned /usr/lib/os-release.
+    sudo cp --remove-destination "$tmp" /etc/os-release
+    sudo chmod 644 /etc/os-release
+    rm -f "$tmp"
+    ok "os-release branded — jolt now shows 'Arch Linux SharkOS'."
+}
+
 # ── PipeWire user services ──────────────────────────────────────────────
 enable_pipewire() {
     info "Enabling PipeWire user services..."
