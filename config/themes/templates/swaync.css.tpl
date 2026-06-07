@@ -7,9 +7,13 @@
   font-size: 13px;
 }
 
+/* Semi-transparent surfaces over a Hyprland blur layerrule (namespaces
+   swaync-control-center / swaync-notification-window) give the same frosted
+   glass as the walker/elephant menu — keep these backgrounds translucent. */
+
 /* ── Floating toast popups (shown briefly when a notification arrives) ── */
 .floating-notifications.background .notification-row .notification-background {
-  background: {{WINDOW_BG_SOLID}};
+  background: {{WINDOW_BG}};
   border: 1px solid {{BORDER_CSS}};
   border-radius: {{RADIUS_POPOVER}};
   margin: 6px;
@@ -17,7 +21,7 @@
 
 /* ── Control center panel ── */
 .control-center {
-  background: {{WINDOW_BG_SOLID}};
+  background: {{WINDOW_BG}};
   border: 1px solid {{BORDER_CSS}};
   border-radius: {{RADIUS_WRAPPER}};
   padding: 12px;
