@@ -20,9 +20,11 @@
 }
 
 /* ── Control center panel ── */
+/* Border matches walker/elephant's .box-wrapper (2px BORDER_CSS_STRONG) for
+   UI consistency across the desktop's surfaces. */
 .control-center {
   background: {{WINDOW_BG}};
-  border: 1px solid {{BORDER_CSS}};
+  border: 2px solid {{BORDER_CSS_STRONG}};
   border-radius: {{RADIUS_WRAPPER}};
   padding: 12px;
 }
