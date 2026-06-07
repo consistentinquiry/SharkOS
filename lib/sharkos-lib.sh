@@ -94,11 +94,21 @@ install_packages() {
 }
 
 # ── Hardware: ASUS ─────────────────────────────────────────────────────
+# asusctl is a heavy from-source AUR build (the whole Slint/Rust GUI stack)
+# and is the most likely step to fail — notably an OOM kill of rustc on
+# low-RAM machines without swap. So its failure is non-fatal: we warn and
+# continue rather than aborting the whole sync. This is also why the
+# orchestrators run detect_asus LAST, after the Plymouth/greetd/theme
+# convergence has already been applied.
 detect_asus() {
     if [[ -d /sys/module/asus_wmi ]] || dmidecode -s system-manufacturer 2>/dev/null | grep -qi asus; then
         info "ASUS hardware detected, installing asusctl..."
-        yay -S "${YAY_FLAGS[@]}" asusctl
-        ok "asusctl installed."
+        if yay -S "${YAY_FLAGS[@]}" asusctl; then
+            ok "asusctl installed."
+        else
+            err "asusctl build failed (often an OOM kill of rustc on low-RAM/no-swap machines)."
+            err "Everything else is applied; re-run later or build asusctl manually with limited jobs."
+        fi
     else
         info "Non-ASUS hardware detected, skipping asusctl."
     fi

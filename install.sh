@@ -36,7 +36,6 @@ source "$SHARKOS_DIR/lib/sharkos-lib.sh"
 system_upgrade
 ensure_yay
 install_packages
-detect_asus
 detect_gpu
 ensure_dirs
 symlink_configs
@@ -48,6 +47,8 @@ configure_bootloader_splash
 configure_greetd
 enable_pipewire
 link_self
+detect_asus                      # heavy AUR build, non-fatal — runs last so a
+                                 # failure can't block the convergence above
 
 # ── Done ──────────────────────────────────────────────────────────────
 echo ""
