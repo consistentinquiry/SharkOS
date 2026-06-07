@@ -61,25 +61,40 @@
   background: {{ACCENT_BG}};
 }
 
-/* ── Notification rows ── */
+/* ── Notification rows ──
+   SwayNC nests several frames around each notification: a group container, the
+   row background, and the notification's own default border + box-shadow. Left
+   alone they stack up as concentric rectangles. Flatten them all to transparent
+   and paint a single clean card on .notification. */
+.notification-group {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
 .notification-row {
   outline: none;
   margin: 4px 2px;
+  background: transparent;
 }
 .notification-row .notification-background {
-  background: {{WINDOW_BG}};
-  border: 1px solid {{HAIRLINE}};
-  border-radius: {{RADIUS_MD}};
-}
-.notification-row .notification-background:hover {
-  background: {{OVERLAY_HOVER}};
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 .notification-row .notification-background .notification {
-  padding: 4px;
+  background: {{OVERLAY_SOFT}};
+  border: none;
+  box-shadow: none;
+  border-radius: {{RADIUS_MD}};
+  margin: 0;
+  padding: 8px;
+}
+.notification-row .notification-background .notification:hover {
+  background: {{OVERLAY_HOVER}};
 }
 .notification-row .notification-background .notification.critical {
   border: 1px solid {{CRIT}};
-  border-radius: {{RADIUS_MD}};
 }
 
 /* Text */
