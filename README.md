@@ -86,6 +86,19 @@ git add -A && git commit -m "update hyprland config"
 git push
 ```
 
+## Versioning & updates
+
+The repo carries a `VERSION` file (SemVer). **Bump it on every change** —
+`scripts/bump-version.sh [major|minor|patch]` (default `patch`) — then commit
+and push.
+
+Each machine records the version it last applied (`~/.local/state/sharkos/version`,
+written when `install.sh`/`sharkos-update` finishes). A waybar indicator
+(`󰚰`, left of the clock) appears whenever the recorded version differs from the
+latest on `origin/main`; **click it to run `sharkos-update`**. It hides again
+once the machine is current. Update from any machine with `git push` here →
+`sharkos-update` (or the icon) on the others.
+
 ## Structure
 
 ```

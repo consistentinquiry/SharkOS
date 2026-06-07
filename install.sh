@@ -49,6 +49,7 @@ enable_pipewire
 link_self
 detect_asus                      # heavy AUR build, non-fatal — runs last so a
                                  # failure can't block the convergence above
+record_version
 
 # ── Done ──────────────────────────────────────────────────────────────
 echo ""

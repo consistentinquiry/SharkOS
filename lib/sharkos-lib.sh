@@ -445,6 +445,22 @@ enable_pipewire() {
     ok "PipeWire enabled."
 }
 
+# ── Record the applied version ──────────────────────────────────────────
+# Stamp the version this machine is now at (the repo's VERSION, post-pull)
+# into machine-local state. The waybar update indicator compares this against
+# the latest available version; when they match, the icon hides. We also poke
+# waybar (SIGRTMIN+9, the custom/update module's signal) for an instant refresh.
+SHARKOS_STATE="${SHARKOS_STATE:-$HOME/.local/state/sharkos}"
+record_version() {
+    local ver
+    ver="$(tr -d '[:space:]' < "$SHARKOS_DIR/VERSION" 2>/dev/null)"
+    [[ -n "$ver" ]] || { err "No VERSION file in repo — skipping version stamp."; return; }
+    mkdir -p "$SHARKOS_STATE"
+    printf '%s\n' "$ver" > "$SHARKOS_STATE/version"
+    ok "Recorded sharkOS version $ver."
+    pkill -RTMIN+9 waybar 2>/dev/null || true
+}
+
 # ── Expose `sharkos-update` on PATH (symlink → repo update.sh) ──────────
 # A symlink (not a copy) so it auto-tracks the repo on every machine.
 link_self() {

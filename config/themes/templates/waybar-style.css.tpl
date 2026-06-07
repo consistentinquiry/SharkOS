@@ -60,6 +60,26 @@ window#waybar {
   padding: 0 10px;
 }
 
+/* Update indicator: only rendered when an update is available (the module is
+   empty otherwise). Accent-coloured with a slow pulse to draw the eye. */
+#custom-update {
+  color: {{ACCENT_BG}};
+  padding: 0 10px;
+  margin: 4px 1px;
+  border-radius: {{RADIUS_BTN}};
+  animation: update-pulse 2s ease-in-out infinite;
+}
+
+#custom-update:hover {
+  background: {{OVERLAY_SOFT}};
+}
+
+@keyframes update-pulse {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
 #pulseaudio, #network, #battery, #custom-clipboard, #custom-menu {
   padding: 0 10px;
   color: {{FG_RGBA}};
