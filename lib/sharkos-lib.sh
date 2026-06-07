@@ -91,7 +91,13 @@ sync_repo() {
         fi
     fi
     info "Pulling latest sharkOS..."
-    git pull --ff-only || die "git pull --ff-only failed (history diverged?). Resolve manually."
+    # Fetch then fast-forward ONLY this branch's upstream. `git pull --ff-only`
+    # (no args) fetches every branch and can try to merge more than one, failing
+    # with "cannot fast-forward to multiple branches"; merging @{u} is
+    # deterministic. A dev box that's ahead of origin just reports up-to-date.
+    git fetch origin || die "git fetch failed — check your network connection."
+    git merge --ff-only '@{u}' \
+        || die "Can't fast-forward to origin (history diverged?). Resolve manually."
     if [[ "$stashed" == "1" ]]; then
         info "Restoring stashed changes..."
         git stash pop || err "git stash pop hit conflicts — resolve them manually."
