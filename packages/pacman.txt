@@ -17,7 +17,7 @@ vulkan-icd-loader
 
 # Status bar & notifications
 waybar
-mako
+swaync
 libnotify
 playerctl
 

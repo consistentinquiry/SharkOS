@@ -8,9 +8,9 @@ A minimal, opinionated Arch Linux desktop built on Hyprland.
 - **Waybar** status bar
 - **Walker + Elephant** application launcher
 - **SwayOSD** volume/brightness overlay
-- **Mako** notifications
+- **SwayNC** notifications + notification center
 - **Ghostty** terminal
-- **System-wide theming** — a `noir` default plus 21 Omarchy-derived themes, switchable from one menu (palette, wallpaper, and corner style apply across waybar, walker, terminal, mako, swayosd, hyprlock & hyprland borders)
+- **System-wide theming** — a `noir` default plus 21 Omarchy-derived themes, switchable from one menu (palette, wallpaper, and corner style apply across waybar, walker, terminal, swaync, swayosd, hyprlock & hyprland borders)
 - **Plymouth** themed boot splash (supports LUKS encryption)
 - **greetd + tuigreet** login manager
 - **PipeWire** audio stack

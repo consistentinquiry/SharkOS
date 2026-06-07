@@ -42,8 +42,8 @@ apply_template "$THEMES_DIR/templates/hyprland-colors.conf.tpl" \
 apply_template "$THEMES_DIR/templates/waybar-style.css.tpl" \
   "$HOME/.config/waybar/style.css"
 
-apply_template "$THEMES_DIR/templates/mako.conf.tpl" \
-  "$HOME/.config/mako/config"
+apply_template "$THEMES_DIR/templates/swaync.css.tpl" \
+  "$HOME/.config/swaync/style.css"
 
 apply_template "$THEMES_DIR/templates/ghostty.conf.tpl" \
   "$HOME/.config/ghostty/config"

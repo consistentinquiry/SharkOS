@@ -80,16 +80,26 @@ window#waybar {
   100% { opacity: 1; }
 }
 
-#pulseaudio, #network, #battery, #custom-clipboard, #custom-menu {
+#pulseaudio, #network, #battery, #custom-notification, #custom-clipboard, #custom-menu {
   padding: 0 10px;
   color: {{FG_RGBA}};
   margin: 4px 1px;
   border-radius: {{RADIUS_BTN}};
 }
 
-#pulseaudio:hover, #network:hover, #battery:hover, #custom-clipboard:hover, #custom-menu:hover {
+#pulseaudio:hover, #network:hover, #battery:hover, #custom-notification:hover, #custom-clipboard:hover, #custom-menu:hover {
   color: {{FG_RGBA}};
   background: {{OVERLAY_SOFT}};
+}
+
+/* Notification bell: accent-coloured while there are unread notifications.
+   The unread count rides as a superscript badge on the top-right of the bell
+   (see the custom/notification format string in the waybar config). */
+#custom-notification.notification,
+#custom-notification.dnd-notification,
+#custom-notification.inhibited-notification,
+#custom-notification.dnd-inhibited-notification {
+  color: {{ACCENT_HEX}};
 }
 
 #pulseaudio.muted {

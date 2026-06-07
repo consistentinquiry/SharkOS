@@ -7,7 +7,7 @@
 
   "modules-left":   ["hyprland/workspaces", "custom/media"],
   "modules-center": ["clock", "custom/update"],
-  "modules-right":  ["pulseaudio", "network", "battery", "custom/clipboard", "custom/menu"],
+  "modules-right":  ["pulseaudio", "network", "battery", "custom/notification", "custom/clipboard", "custom/menu"],
 
   "hyprland/workspaces": {
     
@@ -71,6 +71,26 @@
     "format-full": "󰁹  {capacity}%",
     "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
     "tooltip-format": "{timeTo}, {power:.1f}W"
+  },
+
+  "custom/notification": {
+    "format": "{icon}<sup>{}</sup>",
+    "format-icons": {
+      "notification": "󰂚",
+      "none": "󰂜",
+      "dnd-notification": "󰂚",
+      "dnd-none": "󰂛",
+      "inhibited-notification": "󰂚",
+      "inhibited-none": "󰂜",
+      "dnd-inhibited-notification": "󰂚",
+      "dnd-inhibited-none": "󰂛"
+    },
+    "return-type": "json",
+    "exec": "~/.config/hypr/scripts/swaync-status.sh",
+    "on-click": "swaync-client -t -sw",
+    "on-click-right": "swaync-client -d -sw",
+    "tooltip": true,
+    "escape": true
   },
 
   "custom/clipboard": {

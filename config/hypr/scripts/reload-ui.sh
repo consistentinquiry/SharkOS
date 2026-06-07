@@ -13,8 +13,16 @@ notify-send -t 2000 "Reloading UI..." "Applying configuration changes"
 # Hyprland config (safe reload, no restart)
 hyprctl reload
 
-# Notifications
-makoctl reload 2>/dev/null
+# Notifications (swaync). Make sure the old mako daemon isn't squatting the
+# org.freedesktop.Notifications bus name, start swaync if it isn't running,
+# then live-reload its config + themed CSS.
+pkill -x mako 2>/dev/null
+if ! pgrep -x swaync >/dev/null; then
+  setsid swaync >/dev/null 2>&1 &
+  sleep 0.3
+fi
+swaync-client --reload-config 2>/dev/null
+swaync-client --reload-css 2>/dev/null
 
 # Waybar (via the launcher that adapts modules to the hardware)
 pkill -x waybar
