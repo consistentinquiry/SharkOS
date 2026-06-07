@@ -54,11 +54,10 @@ show_power_menu() {
     [[ -n "$pp_current" ]] && pp_label+="  [${pp_current}]"
     items+="$pp_label  >\n"
   fi
-  items+="󰍁  Lock\n󰒲  Suspend\n󰍃  Logout\n󰜉  Restart\n󰐥  Shutdown"
+  items+="󰒲  Suspend\n󰍃  Logout\n󰜉  Restart\n󰐥  Shutdown"
 
   case $(menu "Power" "$items") in
     *"Power Profile"*) show_power_profile_menu ;;
-    *Lock*)            hyprlock ;;
     *Suspend*)         systemctl suspend ;;
     *Logout*)          hyprctl dispatch exit ;;
     *Restart*)         systemctl reboot ;;
