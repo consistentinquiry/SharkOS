@@ -29,9 +29,11 @@ if [[ "$GLASS" == "off" ]]; then
 else
   BLUR_ENABLED="true"
   # Faint full-screen scrim behind walker. walker's layer covers the whole
-  # monitor, so this (with a low ignore_alpha for the walker namespace) lets the
-  # blur frost the entire desktop behind the launcher — a soft focus effect.
-  WALKER_SCRIM="rgba(0, 0, 0, 0.15)"
+  # monitor, so this (with the low ignore_alpha for the walker namespace) lets
+  # the blur frost the entire desktop behind the launcher — a soft focus effect.
+  # 0.25 is the sweet spot: enough alpha to clear the blur threshold and give a
+  # gentle dim, without heavily darkening the desktop.
+  WALKER_SCRIM="rgba(0, 0, 0, 0.25)"
 fi
 # The Hyprland blur master switch lives in a sourced file so it can be flipped
 # without editing hyprland.conf (which sources it). Disabling it kills blur on
