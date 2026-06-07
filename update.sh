@@ -205,5 +205,3 @@ echo -e "${GREEN}${BOLD}══════════════════�
 echo -e "${GREEN}${BOLD}  SharkOS is up to date!                ${RESET}"
 echo -e "${GREEN}${BOLD}════════════════════════════════════════${RESET}"
 echo ""
-echo -e "  If the boot splash or login manager changed, reboot to apply."
-echo ""
