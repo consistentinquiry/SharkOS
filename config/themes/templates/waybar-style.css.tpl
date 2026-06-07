@@ -63,7 +63,7 @@ window#waybar {
 /* Update indicator: only rendered when an update is available (the module is
    empty otherwise). Accent-coloured with a slow pulse to draw the eye. */
 #custom-update {
-  color: {{ACCENT_BG}};
+  color: {{FG_RGBA}};
   padding: 0 10px;
   margin: 4px 1px;
   border-radius: {{RADIUS_BTN}};

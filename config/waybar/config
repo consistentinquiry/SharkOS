@@ -6,7 +6,7 @@
   "exclusive": true,
 
   "modules-left":   ["hyprland/workspaces", "custom/media"],
-  "modules-center": ["custom/update", "clock"],
+  "modules-center": ["clock", "custom/update"],
   "modules-right":  ["pulseaudio", "network", "battery", "custom/clipboard", "custom/menu"],
 
   "hyprland/workspaces": {
