@@ -47,6 +47,10 @@ get_glass() {
   cat "$HOME/.local/state/sharkos/glass" 2>/dev/null || echo on
 }
 
+get_focus() {
+  cat "$HOME/.local/state/sharkos/elephant-focus" 2>/dev/null || echo on
+}
+
 # ── Toggle actions ─────────────────────────────────────────
 
 toggle_airplane() {
@@ -131,17 +135,22 @@ show_controls() {
   local glass_label="󰂕  UI Glass"
   [[ "$glass_state" == "on" ]] && glass_label+="  [ON]" || glass_label+="  [OFF]"
 
+  local focus_state=$(get_focus)
+  local focus_label="󰈈  Elephant Focus"
+  [[ "$focus_state" == "on" ]] && focus_label+="  [ON]" || focus_label+="  [OFF]"
+
   local selected
-  selected=$(menu "Controls" "$airplane_label\n$wifi_label\n$bt_label\n$hotspot_label\n$audio_label\n$glass_label\n󰑓  Reload UI")
+  selected=$(menu "Controls" "$airplane_label\n$wifi_label\n$bt_label\n$hotspot_label\n$audio_label\n$glass_label\n$focus_label\n󰑓  Reload UI")
 
   case "$selected" in
-    *Airplane*)       toggle_airplane; show_controls ;;
-    *WiFi*)           rfkill unblock wifi 2>/dev/null; launch_tui impala impala ;;
-    *Bluetooth*)      rfkill unblock bluetooth 2>/dev/null; launch_tui bluetui bluetui ;;
-    *Hotspot*)        rfkill unblock wifi 2>/dev/null; launch_tui hotspot impala --mode ap ;;
-    *"Audio Output"*) show_audio_menu ;;
-    *"UI Glass"*)     "$SCRIPT_DIR/glass-toggle.sh" ;;
-    *"Reload UI"*)    "$SCRIPT_DIR/reload-ui.sh" ;;
+    *Airplane*)         toggle_airplane; show_controls ;;
+    *WiFi*)             rfkill unblock wifi 2>/dev/null; launch_tui impala impala ;;
+    *Bluetooth*)        rfkill unblock bluetooth 2>/dev/null; launch_tui bluetui bluetui ;;
+    *Hotspot*)          rfkill unblock wifi 2>/dev/null; launch_tui hotspot impala --mode ap ;;
+    *"Audio Output"*)   show_audio_menu ;;
+    *"UI Glass"*)       "$SCRIPT_DIR/ui-toggle.sh" glass "UI Glass" ;;
+    *"Elephant Focus"*) "$SCRIPT_DIR/ui-toggle.sh" elephant-focus "Elephant focus" ;;
+    *"Reload UI"*)      "$SCRIPT_DIR/reload-ui.sh" ;;
   esac
 }
 

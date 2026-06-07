@@ -14,26 +14,40 @@ fi
 # Source the theme variables
 source "$THEME_DIR/theme.conf"
 
-# ── UI Glass (decoupled from the theme) ─────────────────────────────────
-# A separate on/off flag controls the frosted glass independently of the
-# chosen theme. When off we force the window/panel backgrounds opaque (strip
-# the alpha) and disable Hyprland blur, so surfaces are solid everywhere.
+# ── UI effect flags (decoupled from the theme, and from each other) ─────
+# Two independent on/off flags layered on top of the theme:
+#   glass          — frosted glass: translucent surfaces. Off => opaque.
+#   elephant-focus — blur the whole desktop behind the walker launcher. Off =>
+#                    no backdrop scrim.
 GLASS="$(cat "$HOME/.local/state/sharkos/glass" 2>/dev/null || echo on)"
+FOCUS="$(cat "$HOME/.local/state/sharkos/elephant-focus" 2>/dev/null || echo on)"
+
+# UI Glass off: force the window/panel backgrounds opaque (strip the alpha).
 if [[ "$GLASS" == "off" ]]; then
   # rgba(r, g, b, a) -> rgba(r, g, b, 1)
   WINDOW_BG="$(sed -E 's/,[[:space:]]*[0-9.]+\)/, 1)/' <<<"$WINDOW_BG")"
   WINDOW_BG_SOLID="$(sed -E 's/,[[:space:]]*[0-9.]+\)/, 1)/' <<<"$WINDOW_BG_SOLID")"
-  BLUR_ENABLED="false"
-  # No backdrop scrim behind the launcher when glass is off.
+fi
+
+# Elephant focus: a faint full-screen scrim behind walker. walker's layer covers
+# the whole monitor, so this (with the low ignore_alpha for the walker
+# namespace) lets the blur frost the entire desktop behind the launcher — a soft
+# focus effect. 0.25 clears the blur threshold and gives a gentle dim without
+# heavily darkening. Independent of glass.
+if [[ "$FOCUS" == "off" ]]; then
   WALKER_SCRIM="transparent"
 else
-  BLUR_ENABLED="true"
-  # Faint full-screen scrim behind walker. walker's layer covers the whole
-  # monitor, so this (with the low ignore_alpha for the walker namespace) lets
-  # the blur frost the entire desktop behind the launcher — a soft focus effect.
-  # 0.25 is the sweet spot: enough alpha to clear the blur threshold and give a
-  # gentle dim, without heavily darkening the desktop.
   WALKER_SCRIM="rgba(0, 0, 0, 0.25)"
+fi
+
+# Hyprland blur master: on if EITHER frosted glass or elephant focus needs it,
+# off only when both are off. This is what lets elephant focus blur the desktop
+# even with glass off (opaque surfaces simply hide the blur, so glass-off still
+# looks solid).
+if [[ "$GLASS" == "off" && "$FOCUS" == "off" ]]; then
+  BLUR_ENABLED="false"
+else
+  BLUR_ENABLED="true"
 fi
 # The Hyprland blur master switch lives in a sourced file so it can be flipped
 # without editing hyprland.conf (which sources it). Disabling it kills blur on
