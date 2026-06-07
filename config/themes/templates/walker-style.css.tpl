@@ -89,6 +89,9 @@ scrollbar {
 .item-box {
   border-radius: {{RADIUS_MD}};
   padding: 10px;
+  /* Transparent border so the selected row (which gains a coloured border)
+     doesn't grow 2px taller than the rest. */
+  border: 1px solid transparent;
 }
 
 .item-quick-activation {
