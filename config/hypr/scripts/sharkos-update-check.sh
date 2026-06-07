@@ -33,7 +33,12 @@ fi
 [ -n "$latest" ] || { [ -f "$REPO/VERSION" ] && latest="$(tr -d '[:space:]' < "$REPO/VERSION")"; }
 [ -n "$latest" ] || latest="$running"
 
-if [ "$running" != "$latest" ]; then
+# An update is available only when `latest` is strictly NEWER than `running`
+# (SemVer order). A plain `!=` would also fire on a dev box whose local working
+# tree is ahead of origin (running > latest), showing a bogus downgrade arrow
+# that never clears.
+newest="$(printf '%s\n%s\n' "$running" "$latest" | sort -V | tail -n1)"
+if [ "$running" != "$latest" ] && [ "$newest" = "$latest" ]; then
     # Fire a one-shot desktop notification for this new version. Only when we
     # haven't already notified for this exact "latest", so neither the 30-minute
     # interval nor a manual poll re-spams it. Best-effort: needs a notif daemon.
