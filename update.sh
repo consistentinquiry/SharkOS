@@ -38,6 +38,7 @@ for arg in "$@"; do
 done
 
 # ── Run ─────────────────────────────────────────────────────────────────
+print_banner
 preflight
 sync_repo "$STASH"
 [[ "$DO_UPGRADE" == "1" ]] && system_upgrade || info "Skipping system upgrade (--no-upgrade)."

@@ -143,8 +143,12 @@ window#waybar {
     charging-pulse 2.5s ease-in-out 0.5s infinite;
 }
 
+/* Plugged in but NOT charging (e.g. an ASUS charge-limit hold): treat like a
+   normal idle battery — white — so green is reserved exclusively for charging.
+   The warning/critical rules below are :not(.charging) so they still colour a
+   plugged-but-low battery yellow/red. */
 #battery.plugged {
-  color: {{SUCCESS_DIM}};
+  color: {{FG_RGBA}};
 }
 
 #battery.warning:not(.charging) {

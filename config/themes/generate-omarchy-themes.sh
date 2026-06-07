@@ -159,6 +159,8 @@ COLOR_14="${C[14]}"
 COLOR_15="${C[15]}"
 
 # Corner radius — Omarchy's aesthetic is squared
+# WINDOW_ROUNDING is the Hyprland window corner radius (integer px, no unit).
+WINDOW_ROUNDING=0
 RADIUS_BAR="0px"
 RADIUS_BTN="0px"
 RADIUS_CLOCK="0px"

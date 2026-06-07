@@ -27,6 +27,24 @@ ok()    { echo -e "${GREEN}[sharkOS]${RESET} $*"; }
 err()   { echo -e "${RED}[sharkOS]${RESET} $*" >&2; }
 die()   { err "$*"; exit 1; }
 
+# Greeting banner shown when the updater window opens.
+print_banner() {
+    local ver; ver="$(tr -d '[:space:]' < "$SHARKOS_DIR/VERSION" 2>/dev/null)"
+    printf '%b' "${GREEN}${BOLD}"
+    cat <<'ART'
+
+     ▟▙
+    ▟██▙    ███████ ██   ██  █████  ██████  ██   ██  ██████  ███████
+   ▟████▙   ██      ██   ██ ██   ██ ██   ██ ██  ██  ██    ██ ██
+   ▜████▛   ███████ ███████ ███████ ██████  █████   ██    ██ ███████
+    ▜██▛         ██ ██   ██ ██   ██ ██   ██ ██  ██  ██    ██      ██
+     ▜▛     ███████ ██   ██ ██   ██ ██   ██ ██   ██  ██████  ███████
+ART
+    printf '%b' "${RESET}"
+    printf '   %bSharkOS %s%b — keeping your shark up to date\n\n' \
+        "${GREEN}" "${ver:-rolling}" "${RESET}"
+}
+
 # ── Preflight ──────────────────────────────────────────────────────────
 preflight() {
     [[ -f /etc/arch-release ]] || die "This script only runs on Arch Linux."

@@ -6,7 +6,7 @@ window {
 #container {
   background: {{WINDOW_BG_SOLID}};
   border: 1px solid {{BORDER_CSS}};
-  border-radius: 14px;
+  border-radius: {{RADIUS_BAR}};
   padding: 12px 20px;
   color: {{FG_COLOR}};
 }
@@ -20,14 +20,14 @@ progressbar,
 scale trough {
   min-height: 6px;
   min-width: 180px;
-  border-radius: 3px;
+  border-radius: {{RADIUS_QUICK}};
   background: {{OVERLAY_HOVER}};
 }
 
 progressbar progress,
 scale trough highlight {
   background: {{ACCENT_HEX}};
-  border-radius: 3px;
+  border-radius: {{RADIUS_QUICK}};
 }
 
 label {
