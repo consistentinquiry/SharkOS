@@ -24,8 +24,14 @@ if [[ "$GLASS" == "off" ]]; then
   WINDOW_BG="$(sed -E 's/,[[:space:]]*[0-9.]+\)/, 1)/' <<<"$WINDOW_BG")"
   WINDOW_BG_SOLID="$(sed -E 's/,[[:space:]]*[0-9.]+\)/, 1)/' <<<"$WINDOW_BG_SOLID")"
   BLUR_ENABLED="false"
+  # No backdrop scrim behind the launcher when glass is off.
+  WALKER_SCRIM="transparent"
 else
   BLUR_ENABLED="true"
+  # Faint full-screen scrim behind walker. walker's layer covers the whole
+  # monitor, so this (with a low ignore_alpha for the walker namespace) lets the
+  # blur frost the entire desktop behind the launcher — a soft focus effect.
+  WALKER_SCRIM="rgba(0, 0, 0, 0.15)"
 fi
 # The Hyprland blur master switch lives in a sourced file so it can be flipped
 # without editing hyprland.conf (which sources it). Disabling it kills blur on

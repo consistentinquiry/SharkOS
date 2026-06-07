@@ -10,6 +10,14 @@
   font-family: "JetBrainsMono Nerd Font", sans-serif;
 }
 
+/* walker's layer fills the whole monitor with the box centred. A faint scrim
+   on the root window gives the Hyprland blur (walker namespace) something to
+   frost across the full screen, so the entire desktop blurs behind the
+   launcher. Empty/transparent when UI Glass is off. */
+window {
+  background: {{WALKER_SCRIM}};
+}
+
 popover {
   background: lighter(@window_bg_color);
   border: 1px solid @border_color;
