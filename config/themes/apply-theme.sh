@@ -36,8 +36,12 @@ fi
 # heavily darkening. Independent of glass.
 if [[ "$FOCUS" == "off" ]]; then
   WALKER_SCRIM="transparent"
+  WALKER_SCRIM_PAD="0"
 else
   WALKER_SCRIM="rgba(0, 0, 0, 0.25)"
+  # Keep waybar (top, 38px) in focus: the scrim's top padding + content-box clip
+  # leave the bar strip unscrimmed so the bar stays sharp while the menu is open.
+  WALKER_SCRIM_PAD="38px"
 fi
 
 # Hyprland blur master: on if EITHER frosted glass or elephant focus needs it,

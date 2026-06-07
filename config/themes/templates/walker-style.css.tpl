@@ -16,6 +16,10 @@
    launcher. Empty/transparent when UI Glass is off. */
 window {
   background: {{WALKER_SCRIM}};
+  /* Leave the top bar strip unscrimmed (content-box clip excludes the padding)
+     so waybar stays sharp and in focus while the launcher is open. */
+  padding-top: {{WALKER_SCRIM_PAD}};
+  background-clip: content-box;
 }
 
 popover {
