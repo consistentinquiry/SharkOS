@@ -7,7 +7,7 @@
 
   "modules-left":   ["hyprland/workspaces", "custom/media"],
   "modules-center": ["clock", "custom/update"],
-  "modules-right":  ["custom/menu", "pulseaudio", "network", "battery", "custom/clipboard", "custom/notification"],
+  "modules-right":  ["custom/menu", "pulseaudio", "network", "bluetooth", "battery", "custom/clipboard", "custom/notification"],
 
   "hyprland/workspaces": {
     
@@ -57,6 +57,17 @@
     "format-disconnected": "󰤭",
     "tooltip-format-wifi": "{essid}  {signalStrength}%  {ipaddr}",
     "on-click": "rfkill unblock wifi; ghostty --class=com.sharkos.impala -e impala"
+  },
+
+  "bluetooth": {
+    "format": "󰂯",
+    "format-off": "󰂲",
+    "format-disabled": "󰂲",
+    "format-connected": "󰂱",
+    "tooltip-format": "{controller_alias}\n{status}",
+    "tooltip-format-connected": "{controller_alias}\n{num_connections} connected\n{device_enumerate}",
+    "tooltip-format-enumerate-connected": "{device_alias}",
+    "on-click": "rfkill unblock bluetooth; ghostty --class=com.sharkos.bluetui -e bluetui"
   },
 
   "battery": {

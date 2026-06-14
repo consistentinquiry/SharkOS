@@ -1,5 +1,9 @@
 background = {{COLOR_BG}}
 foreground = {{COLOR_FG}}
+# Frosted glass: a translucent background lets Hyprland's blur (the same UI Glass
+# blur used by walker/swaync) frost the desktop behind the terminal. Forced to 1
+# (opaque) when UI Glass is off — see TERM_OPACITY in apply-theme.sh.
+background-opacity = {{TERM_OPACITY}}
 font-family = JetBrainsMono Nerd Font
 font-size = 13
 

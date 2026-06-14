@@ -80,16 +80,31 @@ window#waybar {
   100% { opacity: 1; }
 }
 
-#pulseaudio, #network, #battery, #custom-notification, #custom-clipboard, #custom-menu {
+#pulseaudio, #network, #bluetooth, #battery, #custom-notification, #custom-clipboard, #custom-menu {
   padding: 0 10px;
   color: {{FG_RGBA}};
   margin: 4px 1px;
   border-radius: {{RADIUS_BTN}};
 }
 
-#pulseaudio:hover, #network:hover, #battery:hover, #custom-notification:hover, #custom-clipboard:hover, #custom-menu:hover {
+#pulseaudio:hover, #network:hover, #bluetooth:hover, #battery:hover, #custom-notification:hover, #custom-clipboard:hover, #custom-menu:hover {
   color: {{FG_RGBA}};
   background: {{OVERLAY_SOFT}};
+}
+
+/* Bluetooth: white (theme fg) when on but idle — inherited from the rule above.
+   Greyed out when the adapter is off/disabled, and the iconic Bluetooth blue
+   when a device is connected. The blue is a deliberate literal (not theme-
+   derived) — like the battery warning/critical colours — so "connected" reads
+   as Bluetooth blue on every theme. */
+#bluetooth.off,
+#bluetooth.disabled,
+#bluetooth.no-controller {
+  color: {{FG_MUTED}};
+}
+
+#bluetooth.connected {
+  color: #0082fc;
 }
 
 /* Notification bell: accent-coloured while there are unread notifications.

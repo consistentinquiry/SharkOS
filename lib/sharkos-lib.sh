@@ -76,6 +76,22 @@ ensure_remote_urls() {
     esac
 }
 
+# Resolve the update channel for this machine. Explicit override wins; else
+# infer: a dev box has a separate SSH *push* URL (set by ensure_remote_urls),
+# consumers cloned over HTTPS and have none. Dev → edge (track main, where you
+# commit); consumer → stable (released v* tags only). Override by writing
+# "edge" or "stable" to $SHARKOS_STATE/channel.
+SHARKOS_STATE="${SHARKOS_STATE:-$HOME/.local/state/sharkos}"
+sharkos_channel() {
+    local ch=""
+    [[ -f "$SHARKOS_STATE/channel" ]] && ch="$(tr -d '[:space:]' < "$SHARKOS_STATE/channel")"
+    case "$ch" in edge|stable) printf '%s' "$ch"; return ;; esac
+    local fetch push
+    fetch="$(git -C "$SHARKOS_DIR" remote get-url origin 2>/dev/null)"
+    push="$(git -C "$SHARKOS_DIR" remote get-url --push origin 2>/dev/null)"
+    if [[ -n "$push" && "$push" != "$fetch" ]]; then printf 'edge'; else printf 'stable'; fi
+}
+
 sync_repo() {
     local allow_stash="${1:-}" stashed=0
     cd "$SHARKOS_DIR"
@@ -90,14 +106,24 @@ sync_repo() {
             die "Commit & push them on this machine first, or re-run with --stash."
         fi
     fi
-    info "Pulling latest sharkOS..."
-    # Fetch then fast-forward ONLY this branch's upstream. `git pull --ff-only`
-    # (no args) fetches every branch and can try to merge more than one, failing
-    # with "cannot fast-forward to multiple branches"; merging @{u} is
-    # deterministic. A dev box that's ahead of origin just reports up-to-date.
-    git fetch origin || die "git fetch failed — check your network connection."
-    git merge --ff-only '@{u}' \
-        || die "Can't fast-forward to origin (history diverged?). Resolve manually."
+    local channel; channel="$(sharkos_channel)"
+    info "Pulling latest sharkOS (channel: $channel)..."
+    git fetch --tags origin || die "git fetch failed — check your network connection."
+    if [[ "$channel" == "edge" ]]; then
+        # Bleeding edge (dev boxes): fast-forward ONLY this branch's upstream.
+        # Bare `git pull --ff-only` fetches every branch and can fail with
+        # "cannot fast-forward to multiple branches"; merging @{u} is
+        # deterministic. A box ahead of origin just reports up-to-date.
+        git merge --ff-only '@{u}' \
+            || die "Can't fast-forward to origin/main (history diverged?). Resolve manually."
+    else
+        # Stable: check out the newest release tag. Detached HEAD is expected
+        # and harmless on a consumer — it never commits.
+        local tag; tag="$(git tag --list 'v*' --sort=-v:refname | head -n1)"
+        [[ -n "$tag" ]] || die "No release tags found. Push a 'v*' tag, or set channel to edge."
+        git checkout --quiet --detach "tags/$tag" || die "Could not check out release $tag."
+        info "Checked out release $tag."
+    fi
     if [[ "$stashed" == "1" ]]; then
         info "Restoring stashed changes..."
         git stash pop || err "git stash pop hit conflicts — resolve them manually."
@@ -108,6 +134,48 @@ sync_repo() {
 system_upgrade() {
     info "Updating system packages..."
     sudo pacman -Syu --noconfirm
+}
+
+# ── Pre-update btrfs snapshot (non-fatal) ───────────────────────────────
+# Before mutating the system (pacman -Syu + the config/initramfs/bootloader
+# convergence below), snapshot root so a broken upgrade is one rollback away.
+# Only runs when root is btrfs; a snapshot failure must NEVER block the update,
+# so (like detect_asus) it warns and continues. Prefers snapper when a root
+# config exists — it pairs with grub-btrfs boot entries and does its own
+# retention — else takes a plain read-only snapshot with bounded retention.
+SHARKOS_SNAP_DIR="${SHARKOS_SNAP_DIR:-/.snapshots-sharkos}"
+SHARKOS_SNAP_KEEP="${SHARKOS_SNAP_KEEP:-5}"
+snapshot_pre_update() {
+    local fstype; fstype="$(findmnt -no FSTYPE / 2>/dev/null || true)"
+    if [[ "$fstype" != "btrfs" ]]; then
+        info "Root is ${fstype:-unknown} (not btrfs) — skipping snapshot."
+        return 0
+    fi
+    local ver; ver="$(tr -d '[:space:]' < "$SHARKOS_DIR/VERSION" 2>/dev/null || echo rolling)"
+
+    if command -v snapper &>/dev/null && sudo snapper -c root list &>/dev/null; then
+        info "Taking snapper pre-update snapshot..."
+        sudo snapper -c root create -t single -c number -d "sharkos-update pre $ver" \
+            || err "snapper snapshot failed — continuing without it."
+        return 0
+    fi
+
+    info "Taking btrfs pre-update snapshot..."
+    sudo mkdir -p "$SHARKOS_SNAP_DIR"
+    local snap="$SHARKOS_SNAP_DIR/pre-$ver-$(date +%Y%m%d-%H%M%S)"
+    if sudo btrfs subvolume snapshot -r / "$snap" >/dev/null 2>&1; then
+        ok "Snapshot: $snap"
+        # Prune all but the newest $SHARKOS_SNAP_KEEP.
+        local old; mapfile -t old < <(
+            sudo ls -1dt "$SHARKOS_SNAP_DIR"/pre-* 2>/dev/null | tail -n +$((SHARKOS_SNAP_KEEP + 1)))
+        local s
+        for s in "${old[@]}"; do
+            sudo btrfs subvolume delete "$s" >/dev/null 2>&1 \
+                && info "  pruned $(basename "$s")"
+        done
+    else
+        err "btrfs snapshot failed — continuing without it."
+    fi
 }
 
 # ── yay (AUR helper) ────────────────────────────────────────────────────
@@ -529,12 +597,50 @@ enable_pipewire() {
     ok "PipeWire enabled."
 }
 
+# ── Bluetooth: BlueZ config (idempotent) ─────────────────────────────────
+# Bluetooth is intentionally NOT enabled here — the BlueZ stack is installed so
+# it's ready to go, but bluetooth.service is left for the user to opt into
+# (`systemctl enable --now bluetooth` or the waybar icon). We do prepare its
+# config though: flip BlueZ's Experimental flag under [General], which AirPods
+# (and many modern devices) need for battery reporting and reliable handling.
+# We only touch that one key, and only restart bluetooth.service if the user has
+# already turned it on — we never start it here.
+configure_bluetooth() {
+    local conf="/etc/bluetooth/main.conf"
+    if [[ ! -f "$conf" ]]; then
+        info "No $conf yet (bluez not installed?) — skipping Bluetooth config."
+        return 0
+    fi
+
+    if grep -qE '^[[:space:]]*Experimental[[:space:]]*=[[:space:]]*true' "$conf"; then
+        ok "BlueZ Experimental already enabled."
+    else
+        info "Enabling BlueZ Experimental features (AirPods battery/handling)..."
+        if grep -qE '^[[:space:]]*#?[[:space:]]*Experimental[[:space:]]*=' "$conf"; then
+            # Replace the existing (commented or not) Experimental line in place.
+            sudo sed -i -E 's/^[[:space:]]*#?[[:space:]]*Experimental[[:space:]]*=.*/Experimental = true/' "$conf"
+        elif grep -qE '^\[General\]' "$conf"; then
+            # Insert right after the [General] header.
+            sudo sed -i -E '/^\[General\]/a Experimental = true' "$conf"
+        else
+            # No [General] section — append one.
+            printf '\n[General]\nExperimental = true\n' | sudo tee -a "$conf" >/dev/null
+        fi
+        ok "BlueZ Experimental enabled."
+    fi
+
+    # Apply now only if the user has already opted Bluetooth on.
+    if systemctl is-active --quiet bluetooth.service; then
+        sudo systemctl restart bluetooth.service && info "  Restarted bluetooth.service."
+    fi
+}
+
 # ── Record the applied version ──────────────────────────────────────────
 # Stamp the version this machine is now at (the repo's VERSION, post-pull)
 # into machine-local state. The waybar update indicator compares this against
 # the latest available version; when they match, the icon hides. We also poke
 # waybar (SIGRTMIN+9, the custom/update module's signal) for an instant refresh.
-SHARKOS_STATE="${SHARKOS_STATE:-$HOME/.local/state/sharkos}"
+# (SHARKOS_STATE is defined above, near sharkos_channel.)
 record_version() {
     local ver
     ver="$(tr -d '[:space:]' < "$SHARKOS_DIR/VERSION" 2>/dev/null)"

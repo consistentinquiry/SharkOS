@@ -24,10 +24,26 @@ running=""
 
 latest=""
 if [ -d "$REPO/.git" ]; then
-    # Update remote-tracking refs without touching the working tree. Time-boxed
-    # so a slow/offline network can't stall the bar.
-    timeout 8 git -C "$REPO" fetch --quiet origin main 2>/dev/null
-    latest="$(git -C "$REPO" show origin/main:VERSION 2>/dev/null | tr -d '[:space:]')"
+    # Update remote-tracking refs + tags without touching the working tree.
+    # Time-boxed so a slow/offline network can't stall the bar.
+    timeout 8 git -C "$REPO" fetch --quiet --tags origin main 2>/dev/null
+    # Same channel inference as sharkos_channel() in the lib (kept inline so
+    # this hot-path exec has no sourcing dependency): explicit override wins,
+    # else a dev box (separate SSH push URL) is edge, a consumer is stable.
+    channel=""
+    [ -f "${SHARKOS_STATE:-$HOME/.local/state/sharkos}/channel" ] && \
+        channel="$(tr -d '[:space:]' < "${SHARKOS_STATE:-$HOME/.local/state/sharkos}/channel")"
+    case "$channel" in
+        edge|stable) ;;
+        *)  f="$(git -C "$REPO" remote get-url origin 2>/dev/null)"
+            p="$(git -C "$REPO" remote get-url --push origin 2>/dev/null)"
+            if [ -n "$p" ] && [ "$p" != "$f" ]; then channel=edge; else channel=stable; fi ;;
+    esac
+    if [ "$channel" = "edge" ]; then
+        latest="$(git -C "$REPO" show origin/main:VERSION 2>/dev/null | tr -d '[:space:]')"
+    else
+        latest="$(git -C "$REPO" tag --list 'v*' --sort=-v:refname | head -n1 | sed 's/^v//')"
+    fi
 fi
 # Offline fallback: whatever the local checkout knows (catches a local bump too).
 [ -n "$latest" ] || { [ -f "$REPO/VERSION" ] && latest="$(tr -d '[:space:]' < "$REPO/VERSION")"; }

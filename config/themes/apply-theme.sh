@@ -22,11 +22,16 @@ source "$THEME_DIR/theme.conf"
 GLASS="$(cat "$HOME/.local/state/sharkos/glass" 2>/dev/null || echo on)"
 FOCUS="$(cat "$HOME/.local/state/sharkos/elephant-focus" 2>/dev/null || echo on)"
 
+# Terminal background translucency (frosted glass on ghostty). A theme may
+# override TERM_OPACITY in its theme.conf; otherwise default to a readable 0.85.
+TERM_OPACITY="${TERM_OPACITY:-0.85}"
+
 # UI Glass off: force the window/panel backgrounds opaque (strip the alpha).
 if [[ "$GLASS" == "off" ]]; then
   # rgba(r, g, b, a) -> rgba(r, g, b, 1)
   WINDOW_BG="$(sed -E 's/,[[:space:]]*[0-9.]+\)/, 1)/' <<<"$WINDOW_BG")"
   WINDOW_BG_SOLID="$(sed -E 's/,[[:space:]]*[0-9.]+\)/, 1)/' <<<"$WINDOW_BG_SOLID")"
+  TERM_OPACITY="1"
 fi
 
 # Elephant focus: a faint full-screen scrim behind walker. walker's layer covers
@@ -36,12 +41,13 @@ fi
 # heavily darkening. Independent of glass.
 if [[ "$FOCUS" == "off" ]]; then
   WALKER_SCRIM="transparent"
-  WALKER_SCRIM_PAD="0"
 else
-  WALKER_SCRIM="rgba(0, 0, 0, 0.25)"
-  # Keep waybar (top, 38px) in focus: the scrim's top padding + content-box clip
-  # leave the bar strip unscrimmed so the bar stays sharp while the menu is open.
-  WALKER_SCRIM_PAD="38px"
+  # Keep waybar (top, ~38px) in focus while leaving the launcher box untouched:
+  # a gradient scrim that's transparent for the top bar strip and the dim/blur
+  # colour below. Using a gradient (not window padding) means the box isn't
+  # shifted or clipped — padding would inset the centred box and cut its bottom.
+  WALKER_BAR_STRIP="45px"
+  WALKER_SCRIM="linear-gradient(to bottom, transparent ${WALKER_BAR_STRIP}, rgba(0, 0, 0, 0.25) ${WALKER_BAR_STRIP})"
 fi
 
 # Hyprland blur master: on if EITHER frosted glass or elephant focus needs it,

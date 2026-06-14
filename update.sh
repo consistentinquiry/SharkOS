@@ -10,9 +10,10 @@
 # │  bootloader cmdline, packages) while preserving machine-local     │
 # │  state (active theme, GPU env).                                   │
 # │                                                                    │
-# │  Usage: sharkos-update [--stash] [--no-upgrade]                   │
+# │  Usage: sharkos-update [--stash] [--no-upgrade] [--no-snapshot]  │
 # │    --stash       stash/pop local changes around the pull          │
 # │    --no-upgrade  skip the full `pacman -Syu` system upgrade        │
+# │    --no-snapshot skip the pre-update btrfs snapshot               │
 # └──────────────────────────────────────────────────────────────────┘
 # No `-e` here: the progress runner inspects each step's exit code itself (each
 # step runs in its own `set -e` subshell), so a failure is reported with a log
@@ -28,15 +29,17 @@ source "$SHARKOS_DIR/lib/sharkos-lib.sh"
 # ── Flags ──────────────────────────────────────────────────────────────
 STASH=""
 DO_UPGRADE=1
+DO_SNAPSHOT=1
 for arg in "$@"; do
     case "$arg" in
-        --stash)      STASH="stash" ;;
-        --no-upgrade) DO_UPGRADE=0 ;;
+        --stash)       STASH="stash" ;;
+        --no-upgrade)  DO_UPGRADE=0 ;;
+        --no-snapshot) DO_SNAPSHOT=0 ;;
         -h|--help)
             # Print just the leading comment box (stop at the first non-# line).
             sed -n '2,${/^#/!q;s/^# \?//p}' "$SCRIPT_PATH"
             exit 0 ;;
-        *) die "Unknown flag: $arg (try --stash, --no-upgrade)" ;;
+        *) die "Unknown flag: $arg (try --stash, --no-upgrade, --no-snapshot)" ;;
     esac
 done
 
@@ -147,8 +150,9 @@ request_sudo
 
 mkdir -p "$(dirname "$LOG")"
 : > "$LOG"
-TOTAL=$(( 16 + DO_UPGRADE ))
+TOTAL=$(( 17 + DO_UPGRADE + DO_SNAPSHOT ))
 
+[[ "$DO_SNAPSHOT" == "1" ]] && run_step "Snapshotting system"        snapshot_pre_update
 [[ "$DO_UPGRADE" == "1" ]] && run_step "Upgrading system packages" system_upgrade
 run_step "Setting up yay"            ensure_yay
 run_step "Installing packages"       install_packages
@@ -163,6 +167,7 @@ run_step "Configuring bootloader"    configure_bootloader_splash
 run_step "Configuring login manager" configure_greetd
 run_step "Branding SharkOS"          brand_os_release
 run_step "Enabling audio"            enable_pipewire
+run_step "Configuring Bluetooth"     configure_bluetooth
 run_step "Linking updater"           link_self
 run_step "Checking ASUS hardware"    detect_asus
 run_step "Recording version"         record_version

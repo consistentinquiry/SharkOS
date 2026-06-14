@@ -60,9 +60,35 @@ ttf-dejavu
 # System
 iwd
 impala
-bluetui
 power-profiles-daemon
 jolt
+
+# Bluetooth (BlueZ stack + bluetui TUI). Installed so Bluetooth is ready to go,
+# but bluetooth.service is NOT auto-enabled — the user opts in with
+# `systemctl enable --now bluetooth` (or the waybar icon). The waybar bluetooth
+# module shows greyed/off until the service is running.
+bluez
+bluez-utils
+bluetui
+
+# Bluetooth audio codecs. These are currently hard deps of pipewire-audio (which
+# pipewire-pulse pulls in), but pinning them explicitly guarantees high-def A2DP
+# survives any future repackaging that demotes them to optional:
+#   libfdk-aac   — AAC (Apple AirPods negotiate this; SBC fallback otherwise)
+#   libfreeaptx  — aptX / aptX HD
+#   libldac      — LDAC (Sony hi-res)
+#   liblc3       — LC3 (LE Audio + HFP super-wideband)
+libfdk-aac
+libfreeaptx
+libldac
+liblc3
+
+# Snapshots / rollback (pre-update btrfs snapshots; grub-btrfs adds rollback
+# boot entries on GRUB. Both no-op on non-btrfs roots — snapper just won't
+# have a root config, and update.sh falls back to a plain btrfs snapshot.)
+snapper
+snap-pac
+grub-btrfs
 
 # Greeter
 greetd

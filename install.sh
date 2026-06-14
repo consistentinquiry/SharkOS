@@ -48,6 +48,7 @@ configure_bootloader_splash
 configure_greetd
 brand_os_release
 enable_pipewire
+configure_bluetooth
 link_self
 detect_asus                      # heavy AUR build, non-fatal — runs last so a
                                  # failure can't block the convergence above

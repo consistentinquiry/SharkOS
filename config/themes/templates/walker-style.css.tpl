@@ -14,12 +14,12 @@
    on the root window gives the Hyprland blur (walker namespace) something to
    frost across the full screen, so the entire desktop blurs behind the
    launcher. Empty/transparent when UI Glass is off. */
+/* Full-screen scrim behind the launcher. When elephant focus is on this is a
+   gradient: transparent across the top bar strip (so waybar stays sharp) and a
+   faint dim below (which the Hyprland blur frosts). A gradient rather than
+   padding keeps the centred launcher box from being shifted or clipped. */
 window {
   background: {{WALKER_SCRIM}};
-  /* Leave the top bar strip unscrimmed (content-box clip excludes the padding)
-     so waybar stays sharp and in focus while the launcher is open. */
-  padding-top: {{WALKER_SCRIM_PAD}};
-  background-clip: content-box;
 }
 
 popover {
@@ -43,9 +43,10 @@ scrollbar {
 }
 
 .box-wrapper {
-  box-shadow:
-    0 19px 38px rgba(0, 0, 0, 0.5),
-    0 15px 12px rgba(0, 0, 0, 0.35);
+  /* No box-shadow: walker's low ignore_alpha (0.05, set so the full-screen
+     scrim frosts) would also frost the desktop behind the shadow's translucent
+     tail, spilling a blur halo past the white border. Dropping the shadow makes
+     the frosted region end exactly at the rounded border. */
   background: @window_bg_color;
   padding: 20px;
   border-radius: {{RADIUS_WRAPPER}};
