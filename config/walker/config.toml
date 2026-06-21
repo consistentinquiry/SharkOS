@@ -1,11 +1,10 @@
 theme = "noir"
 activation_mode = "disabled"
-hide_quick_activation = true   # hide the F1–F4 quick-activation hint buttons
+hide_quick_activation = true
 
 [keybinds]
-quick_activate = []            # disable the F1–F4 quick-activation shortcuts
+quick_activate = []
 
 [providers]
 default = ["desktopapplications"]
 empty = ["desktopapplications"]
-

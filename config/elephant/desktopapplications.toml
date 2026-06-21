@@ -4,6 +4,10 @@ blacklist = [
   '^kitty',          # kitty, kitty-open (using ghostty instead)
   'openjdk',         # java-/jconsole-/jshell-java-openjdk
   '^assistant$',     # Qt Assistant (Qt docs browser, dev-tool dep)
+  '^qdbusviewer$',   # Qt D-Bus Viewer
+  '^linguist$',      # Qt Linguist
+  '^qv4l2$',         # Qt V4L2 test utility
+  '^qvidcap$',       # Qt V4L2 video capture utility
   '^xgps',           # xgps, xgpsspeed (gpsd GUI clients)
 ]
 history = true

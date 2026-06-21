@@ -27,6 +27,7 @@ config/swayosd/style.css
 config/jolt/themes/sharkos.toml
 config/walker/themes/noir/style.css
 config/btop/themes/sharkos.theme
+config/nvim/lua/sharkos_palette.lua
 config/hypr/colors.conf
 config/hypr/glass.conf
 config/hypr/hyprlock.conf

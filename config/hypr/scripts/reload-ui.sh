@@ -28,10 +28,17 @@ swaync-client --reload-css 2>/dev/null
 pkill -x waybar
 setsid "$HOME/.config/hypr/scripts/launch-waybar.sh" >/dev/null 2>&1 &
 
-# Walker data provider + service
-pkill -x elephant
-pkill -f "walker.*gapplication"
-sleep 0.3
+# Walker data provider + service. Wait for the old processes to FULLY exit
+# before relaunching: walker registers a GApplication/single-instance name, and
+# racing the kill + immediate restart can leave the service in a degraded state
+# (e.g. the result list renders unconstrained — every item, no scroll). Same
+# wait-for-exit pattern as the swayosd restart below.
+pkill -x elephant 2>/dev/null
+pkill -f "walker.*gapplication" 2>/dev/null
+for _ in $(seq 1 40); do
+  pgrep -x elephant >/dev/null || pgrep -f "walker.*gapplication" >/dev/null || break
+  sleep 0.05
+done
 setsid elephant >/dev/null 2>&1 &
 setsid walker --gapplication-service >/dev/null 2>&1 &
 

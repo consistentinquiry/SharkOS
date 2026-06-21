@@ -118,6 +118,19 @@ apply_template "$THEMES_DIR/templates/swayosd-style.css.tpl" \
 apply_template "$THEMES_DIR/templates/btop.theme.tpl" \
   "$HOME/.config/btop/themes/sharkos.theme"
 
+apply_template "$THEMES_DIR/templates/nvim-colors.lua.tpl" \
+  "$HOME/.config/nvim/lua/sharkos_palette.lua"
+
+# Live-reload the palette in any running Neovim. Best-effort: nvim opens a
+# default RPC socket at $XDG_RUNTIME_DIR/nvim.<pid>.0; tell each to re-read the
+# regenerated palette. Harmless if none are running or nvim isn't installed.
+if command -v nvim >/dev/null 2>&1; then
+  for sock in "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/nvim.*; do
+    [[ -S "$sock" ]] || continue
+    nvim --server "$sock" --remote-send '<C-\><C-N>:SharkReloadTheme<CR>' >/dev/null 2>&1 || true
+  done
+fi
+
 # Set the theme's wallpaper, if it defines one (empty = leave current wallpaper alone)
 if [[ -n "${WALLPAPER:-}" && -f "$WALLPAPER" ]]; then
   # Persist for next login
