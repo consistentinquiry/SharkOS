@@ -14,3 +14,7 @@ elephant-menus
 
 # Boot splash
 plymouth
+
+# Applications
+google-chrome
+spotify

@@ -5,7 +5,7 @@ vim.g.maplocalleader = "\\"
 local opt = vim.opt
 
 opt.number = true
-opt.relativenumber = true
+opt.relativenumber = false  -- absolute line numbers (don't shift as the cursor moves)
 opt.mouse = "a"
 opt.showmode = false           -- the statusline shows the mode
 opt.clipboard = "unnamedplus"  -- share the system clipboard (wl-clipboard)

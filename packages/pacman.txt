@@ -125,3 +125,7 @@ vlc
 imagemagick
 unzip
 wget
+
+# Applications
+chromium
+keepassxc
