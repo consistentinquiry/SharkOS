@@ -348,6 +348,91 @@ detect_gpu() {
     ok "Bare-metal graphics configured."
 }
 
+# ── Gaming features (opt-in) ────────────────────────────────────────────
+# Windows-game support: Steam + Proton, performance tooling, and the 32-bit
+# GPU drivers matching the detected hardware. The 64-bit drivers come from
+# detect_gpu; this adds the lib32 counterparts so 32-bit games/Proton runtimes
+# work. Idempotent (pacman --needed), so update.sh can re-run it safely.
+install_gaming() {
+    info "Installing gaming features (Steam + Proton)..."
+
+    # 32-bit game libraries live in the [multilib] repo — enable it if needed.
+    if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
+        info "  Enabling [multilib] repository (required for Steam/Proton)..."
+        sudo sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf
+        sudo pacman -Sy --noconfirm
+    fi
+
+    # Common repo packages (Steam, perf tools, 32-bit Vulkan loader).
+    local PKGS=()
+    mapfile -t PKGS < <(grep -vE '^#|^$' "$SHARKOS_DIR/packages/gaming-pacman.txt")
+
+    # GPU-specific 32-bit drivers — same PCI-vendor matching as detect_gpu.
+    local GPUS; GPUS="$(lspci -nn 2>/dev/null | grep -Ei 'vga|3d|display' || true)"
+    if grep -qiE '\[10de:' <<<"$GPUS"; then
+        info "  NVIDIA GPU — adding lib32 driver + PRIME render offload"
+        PKGS+=(lib32-nvidia-utils nvidia-prime)
+    fi
+    if grep -qiE '\[1002:' <<<"$GPUS"; then
+        info "  AMD GPU — adding lib32 Vulkan/Mesa"
+        PKGS+=(lib32-vulkan-radeon lib32-mesa)
+    fi
+    if grep -qiE '\[8086:' <<<"$GPUS"; then
+        info "  Intel GPU — adding lib32 Vulkan/Mesa"
+        PKGS+=(lib32-vulkan-intel lib32-mesa)
+    fi
+
+    sudo pacman -S --needed --noconfirm "${PKGS[@]}"
+
+    # AUR: Proton-GE manager + Epic/GOG launcher.
+    info "  Installing AUR gaming tools..."
+    grep -vE '^#|^$' "$SHARKOS_DIR/packages/gaming-aur.txt" | \
+        yay -S "${YAY_FLAGS[@]}" -
+
+    ok "Gaming features installed."
+}
+
+# Install-time prompt. Records the choice in $SHARKOS_STATE/gaming so
+# sharkos-update keeps it in sync without re-asking. Honors SHARKOS_GAMING for
+# unattended installs and defaults to "no" when there's no terminal to prompt.
+configure_gaming() {
+    local choice flag="$SHARKOS_STATE/gaming"
+    mkdir -p "$SHARKOS_STATE"
+
+    if [[ -n "${SHARKOS_GAMING:-}" ]]; then
+        case "${SHARKOS_GAMING,,}" in
+            y|yes|on|1|true) choice=yes ;;
+            *)               choice=no ;;
+        esac
+        info "Gaming features: '$choice' (from SHARKOS_GAMING)"
+    elif [[ -r /dev/tty ]]; then
+        local ans=""
+        printf '\n  Install gaming features (Steam + Proton, Windows-game support)? [y/N] ' > /dev/tty
+        read -r ans < /dev/tty || true
+        [[ "${ans,,}" == y* ]] && choice=yes || choice=no
+    else
+        info "No terminal for the gaming prompt; skipping (set SHARKOS_GAMING=yes to force)."
+        choice=no
+    fi
+
+    echo "$choice" > "$flag"
+    if [[ "$choice" == yes ]]; then
+        install_gaming
+    else
+        info "Skipping gaming features."
+    fi
+}
+
+# Update-time sync: re-run install_gaming only on machines that opted in, so
+# gaming packages stay current. Never prompts.
+sync_gaming() {
+    if [[ "$(cat "$SHARKOS_STATE/gaming" 2>/dev/null)" == yes ]]; then
+        install_gaming
+    else
+        info "Gaming features not enabled on this machine; skipping."
+    fi
+}
+
 # ── Directories ─────────────────────────────────────────────────────────
 ensure_dirs() {
     info "Creating directories..."

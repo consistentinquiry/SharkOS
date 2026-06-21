@@ -150,13 +150,14 @@ request_sudo
 
 mkdir -p "$(dirname "$LOG")"
 : > "$LOG"
-TOTAL=$(( 17 + DO_UPGRADE + DO_SNAPSHOT ))
+TOTAL=$(( 18 + DO_UPGRADE + DO_SNAPSHOT ))
 
 [[ "$DO_SNAPSHOT" == "1" ]] && run_step "Snapshotting system"        snapshot_pre_update
 [[ "$DO_UPGRADE" == "1" ]] && run_step "Upgrading system packages" system_upgrade
 run_step "Setting up yay"            ensure_yay
 run_step "Installing packages"       install_packages
 run_step "Configuring GPU drivers"   detect_gpu
+run_step "Syncing gaming features"   sync_gaming
 run_step "Preparing directories"     ensure_dirs
 run_step "Linking configs"           symlink_configs
 run_step "Setting wallpaper"         setup_wallpaper

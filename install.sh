@@ -38,6 +38,8 @@ system_upgrade
 ensure_yay
 install_packages
 detect_gpu
+configure_gaming                 # prompt: install Windows-gaming support (Steam
+                                 # + Proton + hardware-matched 32-bit drivers)
 ensure_dirs
 symlink_configs
 setup_wallpaper

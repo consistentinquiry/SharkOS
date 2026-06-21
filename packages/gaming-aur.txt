@@ -1,0 +1,10 @@
+# sharkOS - Gaming packages (AUR)
+# Installed only when gaming features are enabled (see configure_gaming in
+# lib/sharkos-lib.sh).
+
+# Proton-GE manager — install/select community Proton builds (better
+# compatibility than stock Proton for many titles)
+protonup-qt
+
+# Epic / GOG / Amazon game launcher
+heroic-games-launcher-bin

@@ -1,0 +1,17 @@
+# sharkOS - Gaming packages (official repos)
+# Installed only when gaming features are enabled (see configure_gaming in
+# lib/sharkos-lib.sh). GPU-specific 32-bit drivers are added on top of this list
+# by install_gaming based on the detected hardware.
+# Requires the [multilib] repo, which install_gaming enables automatically.
+
+# Steam — Proton (Windows-game compatibility) is built in
+steam
+
+# Performance: per-game CPU governor + Vulkan overlay (64- and 32-bit)
+gamemode
+lib32-gamemode
+mangohud
+lib32-mangohud
+
+# 32-bit Vulkan loader (the 64-bit one is in the base package set)
+lib32-vulkan-icd-loader
