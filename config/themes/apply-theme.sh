@@ -115,6 +115,9 @@ apply_template "$THEMES_DIR/templates/hyprlock.conf.tpl" \
 apply_template "$THEMES_DIR/templates/swayosd-style.css.tpl" \
   "$HOME/.config/swayosd/style.css"
 
+apply_template "$THEMES_DIR/templates/btop.theme.tpl" \
+  "$HOME/.config/btop/themes/sharkos.theme"
+
 # Set the theme's wallpaper, if it defines one (empty = leave current wallpaper alone)
 if [[ -n "${WALLPAPER:-}" && -f "$WALLPAPER" ]]; then
   # Persist for next login

@@ -68,6 +68,7 @@ iwd
 impala
 power-profiles-daemon
 jolt
+btop
 
 # Bluetooth (BlueZ stack + bluetui TUI). Installed so Bluetooth is ready to go,
 # but bluetooth.service is NOT auto-enabled — the user opts in with

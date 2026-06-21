@@ -1,5 +1,11 @@
 action_min_score = 20
-blacklist = []
+blacklist = [
+  '^cmake-gui$',     # CMake GUI
+  '^kitty',          # kitty, kitty-open (using ghostty instead)
+  'openjdk',         # java-/jconsole-/jshell-java-openjdk
+  '^assistant$',     # Qt Assistant (Qt docs browser, dev-tool dep)
+  '^xgps',           # xgps, xgpsspeed (gpsd GUI clients)
+]
 history = true
 history_when_empty = false
 icon_placeholder = 'applications-other'
