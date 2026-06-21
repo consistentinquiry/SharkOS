@@ -32,6 +32,12 @@ pipewire-alsa
 pipewire-pulse
 pavucontrol
 
+# Volume-key feedback "pop" sound: canberra-gtk-play (libcanberra) plays the
+# freedesktop "audio-volume-change" event from sound-theme-freedesktop. See
+# config/hypr/scripts/volume.sh.
+libcanberra
+sound-theme-freedesktop
+
 # Brightness
 brightnessctl
 

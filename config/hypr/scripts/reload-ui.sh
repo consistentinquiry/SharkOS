@@ -35,11 +35,14 @@ sleep 0.3
 setsid elephant >/dev/null 2>&1 &
 setsid walker --gapplication-service >/dev/null 2>&1 &
 
-# On-screen display (restart to pick up new style.css)
-if pgrep -x swayosd-server >/dev/null; then
-  pkill -x swayosd-server
-  setsid swayosd-server >/dev/null 2>&1 &
-fi
+# On-screen display (restart to pick up new style.css). Always ensure it ends up
+# running — not only when already up — and wait for the old instance to fully
+# exit before relaunching so the new one can claim the D-Bus name. Racing the
+# two (kill + immediate restart) leaves swayosd-server dead, which silently
+# breaks the volume/brightness keys until next login.
+pkill -x swayosd-server 2>/dev/null
+for _ in $(seq 1 20); do pgrep -x swayosd-server >/dev/null || break; sleep 0.05; done
+setsid swayosd-server >/dev/null 2>&1 &
 
 # Ghostty (reload config in running instances)
 pkill -USR2 -x ghostty 2>/dev/null

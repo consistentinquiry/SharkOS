@@ -80,16 +80,23 @@ window#waybar {
   100% { opacity: 1; }
 }
 
-#pulseaudio, #network, #bluetooth, #battery, #custom-notification, #custom-clipboard, #custom-menu {
+#pulseaudio, #network, #bluetooth, #custom-btbattery, #battery, #custom-notification, #custom-clipboard, #custom-menu {
   padding: 0 10px;
   color: {{FG_RGBA}};
   margin: 4px 1px;
   border-radius: {{RADIUS_BTN}};
 }
 
-#pulseaudio:hover, #network:hover, #bluetooth:hover, #battery:hover, #custom-notification:hover, #custom-clipboard:hover, #custom-menu:hover {
+#pulseaudio:hover, #network:hover, #bluetooth:hover, #custom-btbattery:hover, #battery:hover, #custom-notification:hover, #custom-clipboard:hover, #custom-menu:hover {
   color: {{FG_RGBA}};
   background: {{OVERLAY_SOFT}};
+}
+
+/* Bluetooth-device battery (e.g. AirPods): only rendered while a device with a
+   reported battery is connected. Turns red below 20% (literal, not theme-
+   derived — a low-battery warning should read as red on every theme). */
+#custom-btbattery.low {
+  color: rgba(235, 77, 75, 0.9);
 }
 
 /* Bluetooth: white (theme fg) when on but idle — inherited from the rule above.

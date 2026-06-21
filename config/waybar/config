@@ -7,7 +7,7 @@
 
   "modules-left":   ["hyprland/workspaces", "custom/media"],
   "modules-center": ["clock", "custom/update"],
-  "modules-right":  ["custom/menu", "pulseaudio", "network", "bluetooth", "battery", "custom/clipboard", "custom/notification"],
+  "modules-right":  ["custom/menu", "pulseaudio", "network", "bluetooth", "custom/btbattery", "battery", "custom/clipboard", "custom/notification"],
 
   "hyprland/workspaces": {
     
@@ -67,6 +67,16 @@
     "tooltip-format": "{controller_alias}\n{status}",
     "tooltip-format-connected": "{controller_alias}\n{num_connections} connected\n{device_enumerate}",
     "tooltip-format-enumerate-connected": "{device_alias}",
+    "on-click": "rfkill unblock bluetooth; ghostty --class=com.sharkos.bluetui -e bluetui"
+  },
+
+  "custom/btbattery": {
+    "format": "{}",
+    "return-type": "json",
+    "exec": "~/.config/hypr/scripts/bluetooth-battery.sh",
+    "interval": 30,
+    "signal": 10,
+    "tooltip": true,
     "on-click": "rfkill unblock bluetooth; ghostty --class=com.sharkos.bluetui -e bluetui"
   },
 
