@@ -384,10 +384,31 @@ install_gaming() {
 
     sudo pacman -S --needed --noconfirm "${PKGS[@]}"
 
-    # AUR: Proton-GE manager + Epic/GOG launcher.
+    # AUR: Proton-GE manager.
     info "  Installing AUR gaming tools..."
     grep -vE '^#|^$' "$SHARKOS_DIR/packages/gaming-aur.txt" | \
         yay -S "${YAY_FLAGS[@]}" -
+
+    # Crisp Steam on fractionally-scaled displays: shadow the packaged
+    # steam.desktop with a user override that launches through the scale-aware
+    # wrapper (pairs with xwayland force_zero_scaling in hyprland.conf). The
+    # wrapper reads the live monitor scale, so this is correct on any display.
+    info "  Installing scale-aware Steam launcher..."
+    local apps_dir="$HOME/.local/share/applications"
+    mkdir -p "$apps_dir"
+    cat > "$apps_dir/steam.desktop" <<EOF
+[Desktop Entry]
+Name=Steam
+Comment=Application for managing and playing games on Steam
+Exec=$HOME/.config/hypr/scripts/steam.sh %U
+Icon=steam
+Terminal=false
+Type=Application
+Categories=Network;FileTransfer;Game;
+MimeType=x-scheme-handler/steam;x-scheme-handler/steamlink;
+StartupWMClass=Steam
+EOF
+    update-desktop-database "$apps_dir" 2>/dev/null || true
 
     ok "Gaming features installed."
 }

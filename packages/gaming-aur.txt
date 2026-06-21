@@ -5,6 +5,3 @@
 # Proton-GE manager — install/select community Proton builds (better
 # compatibility than stock Proton for many titles)
 protonup-qt
-
-# Epic / GOG / Amazon game launcher
-heroic-games-launcher-bin
