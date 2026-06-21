@@ -194,13 +194,21 @@ ensure_yay() {
 }
 
 # ── Packages (official + AUR) ───────────────────────────────────────────
+# Read a package-list file into clean package names: strips full-line AND
+# trailing (inline) comments plus blank lines. Without the inline-comment strip,
+# a line like "nodejs  # note" would be passed to pacman verbatim ("target not
+# found").
+pkglist() {
+    sed -e 's/#.*//' -e 's/[[:space:]]*$//' -e '/^[[:space:]]*$/d' "$1"
+}
+
 install_packages() {
     info "Installing official packages..."
-    grep -v '^#' "$SHARKOS_DIR/packages/pacman.txt" | grep -v '^$' | \
+    pkglist "$SHARKOS_DIR/packages/pacman.txt" | \
         sudo pacman -S --needed --noconfirm -
 
     info "Installing AUR packages..."
-    grep -vE '^#|^$' "$SHARKOS_DIR/packages/aur.txt" | \
+    pkglist "$SHARKOS_DIR/packages/aur.txt" | \
         yay -S "${YAY_FLAGS[@]}" -
 }
 
@@ -365,7 +373,7 @@ install_gaming() {
 
     # Common repo packages (Steam, perf tools, 32-bit Vulkan loader).
     local PKGS=()
-    mapfile -t PKGS < <(grep -vE '^#|^$' "$SHARKOS_DIR/packages/gaming-pacman.txt")
+    mapfile -t PKGS < <(pkglist "$SHARKOS_DIR/packages/gaming-pacman.txt")
 
     # GPU-specific 32-bit drivers — same PCI-vendor matching as detect_gpu.
     local GPUS; GPUS="$(lspci -nn 2>/dev/null | grep -Ei 'vga|3d|display' || true)"
@@ -386,7 +394,7 @@ install_gaming() {
 
     # AUR: Proton-GE manager.
     info "  Installing AUR gaming tools..."
-    grep -vE '^#|^$' "$SHARKOS_DIR/packages/gaming-aur.txt" | \
+    pkglist "$SHARKOS_DIR/packages/gaming-aur.txt" | \
         yay -S "${YAY_FLAGS[@]}" -
 
     # Crisp Steam on fractionally-scaled displays: shadow the packaged

@@ -77,14 +77,14 @@ btop
 # launch (needs internet once). lazy.nvim, plugins and the blink.cmp prebuilt
 # binary are also fetched on first launch.
 neovim
-nodejs            # TypeScript server + many LSPs run on Node
+nodejs              # TypeScript server + many LSPs run on Node
 npm
-jdk-openjdk       # JDK for running jdtls and building Java projects
-ripgrep           # telescope live-grep
-fd                # telescope find-files
-tree-sitter-cli   # building some treesitter grammars
-shellcheck        # bash diagnostics (auto-used by bash-language-server)
-shfmt             # bash formatting (conform.nvim)
+jdk-openjdk         # JDK for running jdtls / building Java
+ripgrep             # telescope live-grep
+fd                  # telescope find-files
+tree-sitter-cli     # building some treesitter grammars
+shellcheck          # bash diagnostics (via bash-language-server)
+shfmt               # bash formatting (conform.nvim)
 
 # Bluetooth (BlueZ stack + bluetui TUI). Installed so Bluetooth is ready to go,
 # but bluetooth.service is NOT auto-enabled — the user opts in with
