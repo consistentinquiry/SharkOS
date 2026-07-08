@@ -35,6 +35,15 @@ cp -a "$REPO/iso/airootfs/." "$PROFILE/airootfs/"
 # sharkos-install copies it into place during install.
 mkdir -p "$PROFILE/airootfs/usr/local/share/sharkos/target"
 cp -a "$REPO/iso/target/." "$PROFILE/airootfs/usr/local/share/sharkos/target/"
+# Bake in which branch first-boot installs the desktop from (default: main).
+# Set SHARKOS_ISO_BRANCH to build a test ISO for a feature branch — the branch
+# must be pushed, since first-boot fetches install.sh from GitHub.
+BRANCH="${SHARKOS_ISO_BRANCH:-main}"
+if [[ "$BRANCH" != "main" ]]; then
+  echo "==> Baking install branch: $BRANCH"
+  sed -i "s|\${SHARKOS_BRANCH:-main}|\${SHARKOS_BRANCH:-$BRANCH}|" \
+    "$PROFILE/airootfs/usr/local/share/sharkos/target/usr/local/bin/sharkos-firstboot"
+fi
 # Extra packages for the live environment
 cat "$REPO/iso/packages.x86_64.extra" >> "$PROFILE/packages.x86_64"
 

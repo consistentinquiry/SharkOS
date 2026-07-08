@@ -14,7 +14,10 @@ set -uo pipefail
 DONE_MARKER="/var/lib/sharkos/.firstboot-done"
 SUDO_DROPIN="/etc/sudoers.d/99-sharkos-firstboot"
 SWAPFILE="/var/lib/sharkos/install-swap"
-SETUP_URL="https://raw.githubusercontent.com/consistentinquiry/SharkOS/main/install.sh"
+# Branch the desktop installs from. build-iso.sh rewrites the default when the
+# ISO is built with SHARKOS_ISO_BRANCH set (for testing feature branches).
+SHARKOS_BRANCH="${SHARKOS_BRANCH:-main}"
+SETUP_URL="https://raw.githubusercontent.com/consistentinquiry/SharkOS/$SHARKOS_BRANCH/install.sh"
 made_swap=0
 
 mkdir -p "$(dirname "$DONE_MARKER")"
@@ -98,7 +101,7 @@ if ! runuser -l "$USERNAME" -c "curl -fsSL '$SETUP_URL' -o '$SCRIPT'"; then
   echo "     (A private repo returns 404 here; check network/DNS and repo access.)" >&2
 elif ! runuser -l "$USERNAME" -c "test -s '$SCRIPT'"; then
   echo "  !! Downloaded installer is empty — aborting." >&2
-elif runuser -l "$USERNAME" -c "script -qefc 'bash $SCRIPT' /dev/null"; then
+elif runuser -l "$USERNAME" -c "script -qefc 'SHARKOS_BRANCH=$SHARKOS_BRANCH bash $SCRIPT' /dev/null"; then
   # Run under `script` so the install gets a pseudo-tty. yay/makepkg open
   # /dev/tty for their prompts; without a controlling terminal (this is a
   # oneshot service) they fail with "open /dev/tty: no such device". The pty

@@ -9,6 +9,9 @@ set -euo pipefail
 # ── Config ────────────────────────────────────────────────────────────
 SHARKOS_REPO="https://github.com/consistentinquiry/SharkOS.git"
 SHARKOS_DIR="$HOME/Git/sharkOS"
+# Branch to install from. Overridable so a test ISO (build-iso.sh
+# SHARKOS_ISO_BRANCH=...) or a manual run can install a feature branch.
+SHARKOS_BRANCH="${SHARKOS_BRANCH:-main}"
 BOLD='\033[1m'
 BLUE='\033[1;34m'
 GREEN='\033[1;32m'
@@ -28,12 +31,14 @@ info "Starting sharkOS installation..."
 
 # ── Clone or update repo ─────────────────────────────────────────────
 if [[ -d "$SHARKOS_DIR/.git" ]]; then
-    info "Updating existing sharkOS repo..."
+    info "Updating existing sharkOS repo (branch: $SHARKOS_BRANCH)..."
+    git -C "$SHARKOS_DIR" fetch origin "$SHARKOS_BRANCH" || true
+    git -C "$SHARKOS_DIR" checkout "$SHARKOS_BRANCH" || true
     git -C "$SHARKOS_DIR" pull --ff-only || true
 else
-    info "Cloning sharkOS repo..."
+    info "Cloning sharkOS repo (branch: $SHARKOS_BRANCH)..."
     mkdir -p "$(dirname "$SHARKOS_DIR")"
-    git clone "$SHARKOS_REPO" "$SHARKOS_DIR"
+    git clone -b "$SHARKOS_BRANCH" "$SHARKOS_REPO" "$SHARKOS_DIR"
 fi
 
 cd "$SHARKOS_DIR"
