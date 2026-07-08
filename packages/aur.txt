@@ -4,6 +4,9 @@
 # Application launcher
 walker
 
+# Liquid-glass shell (beta, LiquidAss theme)
+quickshell
+
 # Volume/brightness OSD
 swayosd-git
 

@@ -54,6 +54,18 @@ apply_template "$THEMES_DIR/templates/hyprlock.conf.tpl" \
 apply_template "$THEMES_DIR/templates/swayosd-style.css.tpl" \
   "$HOME/.config/swayosd/style.css"
 
+# Quickshell glass shell theme. The shader needs the wallpaper pixels, so
+# resolve the effective wallpaper: the theme's own, else whatever hyprpaper
+# is currently configured with.
+WALLPAPER_RESOLVED="${WALLPAPER:-}"
+if [[ -z "$WALLPAPER_RESOLVED" || ! -f "$WALLPAPER_RESOLVED" ]]; then
+  WALLPAPER_RESOLVED=$(sed -nE 's/^[[:space:]]*path[[:space:]]*=[[:space:]]*//p' \
+    "$HOME/.config/hypr/hyprpaper.conf" 2>/dev/null | head -n1)
+fi
+mkdir -p "$HOME/.config/quickshell/sharkos"
+apply_template "$THEMES_DIR/templates/quickshell-theme.qml.tpl" \
+  "$HOME/.config/quickshell/sharkos/Theme.qml"
+
 # Set the theme's wallpaper, if it defines one (empty = leave current wallpaper alone)
 if [[ -n "${WALLPAPER:-}" && -f "$WALLPAPER" ]]; then
   # Persist for next login

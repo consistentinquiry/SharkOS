@@ -16,9 +16,12 @@ hyprctl reload
 # Notifications
 makoctl reload 2>/dev/null
 
-# Waybar
+# Status bar: waybar or the Quickshell glass shell, per the theme's SHELL_KIND.
+# Kill both stacks, then let shell-start.sh start the right one.
 pkill -x waybar
-setsid waybar >/dev/null 2>&1 &
+pkill -f "quickshell -c sharkos$" 2>/dev/null
+pkill -f "qs -c sharkos$" 2>/dev/null
+"$HOME/.config/hypr/scripts/shell-start.sh"
 
 # Walker data provider + service
 pkill -x elephant

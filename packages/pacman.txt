@@ -15,6 +15,12 @@ wayland-protocols
 waybar
 mako
 
+# Quickshell liquid-glass shell (beta, LiquidAss theme)
+# qt6-shadertools is only needed to rebuild shaders (scripts/build-shaders.sh)
+qt6-declarative
+qt6-wayland
+qt6-shadertools
+
 # Terminal
 ghostty
 

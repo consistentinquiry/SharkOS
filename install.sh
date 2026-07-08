@@ -97,6 +97,7 @@ CONFIG_DIRS=(
     swappy
     elephant
     themes
+    quickshell
 )
 
 for dir in "${CONFIG_DIRS[@]}"; do
