@@ -1,13 +1,43 @@
 #!/usr/bin/env bash
 # Boot a built SharkOS ISO in QEMU (UEFI) to test before writing to real hardware.
-# Usage: scripts/test-iso.sh [path/to.iso]   (defaults to newest in dist/)
+#
+# Usage:
+#   scripts/test-iso.sh [path/to.iso]   boot ISO + virtual disk (defaults to newest in dist/)
+#   scripts/test-iso.sh --installed     boot the virtual disk only (post-install testing)
+#
+# A persistent qcow2 disk (dist/test-disk.qcow2, sparse) is attached so the
+# installer has something to install onto and first-boot/desktop testing
+# survives reboots. Delete the file to start from a clean machine.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-ISO="${1:-$(ls -t "$REPO"/dist/*.iso 2>/dev/null | head -1 || true)}"
 
-[[ -n "$ISO" && -f "$ISO" ]] || { echo "No ISO found. Build one first: ./build-iso.sh"; exit 1; }
+DISK="${SHARKOS_TEST_DISK:-$REPO/dist/test-disk.qcow2}"
+DISK_SIZE="${SHARKOS_TEST_DISK_SIZE:-40G}"
+
 command -v qemu-system-x86_64 >/dev/null || { echo "Install QEMU: sudo pacman -S qemu-base"; exit 1; }
+
+if [[ ! -f "$DISK" ]]; then
+  echo "==> Creating virtual disk $DISK ($DISK_SIZE, sparse)"
+  qemu-img create -f qcow2 "$DISK" "$DISK_SIZE" >/dev/null
+fi
+
+# q35: modern machine type, and no legacy floppy controller (a phantom
+# /dev/fd0 otherwise shows up in the installer's disk list).
+# virtio-vga: proper KMS for Plymouth/Hyprland in the guest (GL is still
+# software/llvmpipe — expect the desktop to render slowly).
+ARGS=(-enable-kvm -machine q35 -m 4096 -smp 2 -cpu host
+      -vga virtio
+      -drive "file=$DISK,if=virtio,format=qcow2")
+
+if [[ "${1:-}" == "--installed" ]]; then
+  echo "==> Booting installed system from $DISK (no ISO)"
+else
+  ISO="${1:-$(ls -t "$REPO"/dist/*.iso 2>/dev/null | head -1 || true)}"
+  [[ -n "$ISO" && -f "$ISO" ]] || { echo "No ISO found. Build one first: ./build-iso.sh"; exit 1; }
+  echo "==> Booting $ISO"
+  ARGS+=(-cdrom "$ISO" -boot d)
+fi
 
 # Find OVMF firmware for UEFI boot (package: edk2-ovmf). Falls back to BIOS if absent.
 OVMF=""
@@ -16,8 +46,6 @@ for f in /usr/share/edk2/x64/OVMF_CODE.4m.fd \
          /usr/share/OVMF/OVMF_CODE.fd; do
   [[ -f "$f" ]] && { OVMF="$f"; break; }
 done
-
-ARGS=(-enable-kvm -m 4096 -smp 2 -cpu host -cdrom "$ISO" -boot d)
 if [[ -n "$OVMF" ]]; then
   echo "==> UEFI boot via $OVMF"
   ARGS+=(-drive "if=pflash,format=raw,readonly=on,file=$OVMF")
@@ -25,5 +53,4 @@ else
   echo "==> OVMF not found (sudo pacman -S edk2-ovmf for UEFI); booting BIOS mode"
 fi
 
-echo "==> Booting $ISO"
 exec qemu-system-x86_64 "${ARGS[@]}"
