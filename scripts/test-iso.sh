@@ -24,10 +24,18 @@ fi
 
 # q35: modern machine type, and no legacy floppy controller (a phantom
 # /dev/fd0 otherwise shows up in the installer's disk list).
-# virtio-vga: proper KMS for Plymouth/Hyprland in the guest (GL is still
-# software/llvmpipe — expect the desktop to render slowly).
+# virtio-vga gives the guest proper KMS for Plymouth/Hyprland but qemu-base
+# doesn't ship it (package: qemu-hw-display-virtio-vga, or qemu-desktop);
+# fall back to std VGA (bochs-drm in the guest) when it's missing. GL is
+# software/llvmpipe either way — expect the desktop to render slowly.
+if qemu-system-x86_64 -device help 2>/dev/null | grep -q virtio-vga; then
+  VGA=virtio
+else
+  echo "==> virtio-vga not available (pacman -S qemu-hw-display-virtio-vga); using std VGA"
+  VGA=std
+fi
 ARGS=(-enable-kvm -machine q35 -m 4096 -smp 2 -cpu host
-      -vga virtio
+      -vga "$VGA"
       -drive "file=$DISK,if=virtio,format=qcow2")
 
 if [[ "${1:-}" == "--installed" ]]; then
