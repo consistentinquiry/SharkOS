@@ -11,7 +11,9 @@ SHARKOS_REPO="https://github.com/consistentinquiry/SharkOS.git"
 SHARKOS_DIR="$HOME/Git/sharkOS"
 # Branch to install from. Overridable so a test ISO (build-iso.sh
 # SHARKOS_ISO_BRANCH=...) or a manual run can install a feature branch.
-SHARKOS_BRANCH="${SHARKOS_BRANCH:-main}"
+# Unset: an existing clone stays on its current branch (a re-run/update must
+# never silently flip a feature-branch install back to main); fresh = main.
+SHARKOS_BRANCH="${SHARKOS_BRANCH:-}"
 BOLD='\033[1m'
 BLUE='\033[1;34m'
 GREEN='\033[1;32m'
@@ -31,11 +33,15 @@ info "Starting sharkOS installation..."
 
 # ── Clone or update repo ─────────────────────────────────────────────
 if [[ -d "$SHARKOS_DIR/.git" ]]; then
+    if [[ -z "$SHARKOS_BRANCH" ]]; then
+        SHARKOS_BRANCH="$(git -C "$SHARKOS_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
+    fi
     info "Updating existing sharkOS repo (branch: $SHARKOS_BRANCH)..."
     git -C "$SHARKOS_DIR" fetch origin "$SHARKOS_BRANCH" || true
     git -C "$SHARKOS_DIR" checkout "$SHARKOS_BRANCH" || true
     git -C "$SHARKOS_DIR" pull --ff-only || true
 else
+    SHARKOS_BRANCH="${SHARKOS_BRANCH:-main}"
     info "Cloning sharkOS repo (branch: $SHARKOS_BRANCH)..."
     mkdir -p "$(dirname "$SHARKOS_DIR")"
     git clone -b "$SHARKOS_BRANCH" "$SHARKOS_REPO" "$SHARKOS_DIR"
