@@ -51,10 +51,25 @@ jq
 wl-clipboard
 cliphist
 
-# File manager & automount
+# File manager & automount.
+# Thumbnails in Thunar come from tumbler (the D-Bus thumbnail service Thunar
+# asks; no systemd unit to enable). tumbler covers images/PDF/fonts itself but
+# only does video with ffmpegthumbnailer present — that's what gets previews for
+# mp4, mov/quicktime, mkv, webm, avi and friends.
 thunar
+tumbler
+ffmpegthumbnailer
 udiskie
 udisks2
+
+# GTK light/dark. apply-theme.sh renders ~/.config/gtk-{3.0,4.0}/settings.ini
+# and sets the org.gnome.desktop.interface keys, so GTK apps (Thunar,
+# pavucontrol) follow the active sharkOS theme. dconf is the backend those
+# gsettings writes need; xdg-desktop-portal-gtk serves the same colour scheme to
+# portal clients (Chromium, Electron, Flatpak) which never read settings.ini.
+dconf
+gsettings-desktop-schemas
+xdg-desktop-portal-gtk
 
 # Fonts
 ttf-jetbrains-mono

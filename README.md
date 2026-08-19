@@ -10,7 +10,8 @@ A minimal, opinionated Arch Linux desktop built on Hyprland.
 - **SwayOSD** volume/brightness overlay
 - **SwayNC** notifications + notification center
 - **Ghostty** terminal
-- **System-wide theming** — a `noir` default plus 21 Omarchy-derived themes, switchable from one menu (palette, wallpaper, and corner style apply across waybar, walker, terminal, swaync, swayosd, hyprlock & hyprland borders)
+- **Thunar** file manager, with image/video thumbnails (tumbler + ffmpegthumbnailer)
+- **System-wide theming** — a `noir` default plus 21 Omarchy-derived themes, switchable from one menu (palette, wallpaper, and corner style apply across waybar, walker, terminal, swaync, swayosd, hyprlock & hyprland borders; GTK apps follow the theme's light/dark)
 - **Plymouth** themed boot splash (supports LUKS encryption)
 - **greetd + tuigreet** login manager
 - **PipeWire** audio stack

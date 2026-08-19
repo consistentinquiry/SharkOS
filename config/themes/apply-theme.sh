@@ -26,6 +26,27 @@ FOCUS="$(cat "$HOME/.local/state/sharkos/elephant-focus" 2>/dev/null || echo on)
 # override TERM_OPACITY in its theme.conf; otherwise default to a readable 0.85.
 TERM_OPACITY="${TERM_OPACITY:-0.85}"
 
+# ── GTK light/dark ──────────────────────────────────────────────────────
+# GTK apps (Thunar, pavucontrol) only get Adwaita light or dark from us, picked
+# from the theme's background luminance (Rec. 709) so the light themes
+# (catppuccin-latte, flexoki-light, white) don't leave Thunar dark. Unparseable
+# or missing COLOR_BG falls back to dark, matching the noir default.
+gtk_prefer_dark() {
+  local hex="${COLOR_BG#\#}" r g b lum
+  [[ "$hex" =~ ^[0-9A-Fa-f]{6}$ ]] || { echo 1; return; }
+  r=$((16#${hex:0:2})); g=$((16#${hex:2:2})); b=$((16#${hex:4:2}))
+  lum=$(((2126 * r + 7152 * g + 722 * b) / 10000))
+  ((lum < 128)) && echo 1 || echo 0
+}
+GTK_PREFER_DARK="$(gtk_prefer_dark)"
+if [[ "$GTK_PREFER_DARK" == "1" ]]; then
+  GTK_COLOR_SCHEME="prefer-dark"
+  GTK_THEME_NAME="Adwaita-dark"
+else
+  GTK_COLOR_SCHEME="prefer-light"
+  GTK_THEME_NAME="Adwaita"
+fi
+
 # UI Glass off: force the window/panel backgrounds opaque (strip the alpha).
 if [[ "$GLASS" == "off" ]]; then
   # rgba(r, g, b, a) -> rgba(r, g, b, 1)
@@ -120,6 +141,24 @@ apply_template "$THEMES_DIR/templates/btop.theme.tpl" \
 
 apply_template "$THEMES_DIR/templates/nvim-colors.lua.tpl" \
   "$HOME/.config/nvim/lua/sharkos_palette.lua"
+
+# GTK 3 + 4. These live outside the symlinked repo configs (they're per-machine
+# rendered state, and ~/.config/gtk-*/ is GTK's own directory), so they're
+# written straight into $HOME rather than through config/.
+mkdir -p "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0"
+apply_template "$THEMES_DIR/templates/gtk-settings.ini.tpl" \
+  "$HOME/.config/gtk-3.0/settings.ini"
+apply_template "$THEMES_DIR/templates/gtk-settings.ini.tpl" \
+  "$HOME/.config/gtk-4.0/settings.ini"
+
+# Portal clients (libadwaita, Chromium, Electron, Flatpak) don't read
+# settings.ini — they ask xdg-desktop-portal-gtk, which reads these gsettings
+# keys. Hence the explicit -dark theme name here: there's no prefer-dark flag on
+# this path, the variant has to be named.
+if command -v gsettings >/dev/null 2>&1; then
+  gsettings set org.gnome.desktop.interface color-scheme "$GTK_COLOR_SCHEME" 2>/dev/null || true
+  gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME_NAME" 2>/dev/null || true
+fi
 
 # Live-reload the palette in any running Neovim. Best-effort: nvim opens a
 # default RPC socket at $XDG_RUNTIME_DIR/nvim.<pid>.0; tell each to re-read the
